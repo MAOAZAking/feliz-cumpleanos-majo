@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Feliz Cumple Majo - 21</title>
+    <title>Feliz Cumple Majo - 22</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #333; font-family: 'Arial', sans-serif; }
         #canvas-container { width: 100vw; height: 100vh; display: block; }
@@ -177,8 +177,7 @@
 
         // --- Materiales ---
         const matTable = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.6 });
-        const matCakeBase = new THREE.MeshStandardMaterial({ color: 0xFF69B4 }); // Rosa fuerte
-        const matCakeTop = new THREE.MeshStandardMaterial({ color: 0xFFC0CB }); // Rosa claro
+        const matPlato = new THREE.MeshStandardMaterial({ color: 0xf0f0f0, roughness: 0.2 }); // Material para el plato
         const matCandle = new THREE.MeshStandardMaterial({ color: 0xFFFFFF });
         const matFlame = new THREE.MeshBasicMaterial({ color: 0xFF4500 });
         const matWall = new THREE.MeshStandardMaterial({ color: 0xFFF0F5, side: THREE.BackSide }); // Paredes
@@ -186,42 +185,78 @@
         // --- Objetos 3D ---
 
         // 1. Habitación (Caja grande invertida)
-        const roomGeo = new THREE.BoxGeometry(40, 30, 40);
+        const roomGeo = new THREE.BoxGeometry(40, 50, 40);
         const room = new THREE.Mesh(roomGeo, matWall);
         room.position.y = 14.9; // Suelo en 0 aprox
         room.receiveShadow = true;
         scene.add(room);
 
         // 2. Mesa
-        const tableGeo = new THREE.CylinderGeometry(4, 4, 0.2, 32);
-        const table = new THREE.Mesh(tableGeo, matTable);
-        table.position.y = 0;
-        table.position.z = -12; // Movido hacia la pared
-        table.receiveShadow = true;
-        scene.add(table);
-
-        // Patas de mesa (simple)
-        const legGeo = new THREE.CylinderGeometry(0.2, 0.2, 3, 16);
-        const leg = new THREE.Mesh(legGeo, new THREE.MeshStandardMaterial({color: 0x5c4033}));
-        leg.position.y = -1.5;
-        leg.position.z = -12; // Movido hacia la pared
-        scene.add(leg);
-
-        // 3. Pastel
-        const cakeGroup = new THREE.Group();
-        cakeGroup.position.z = -12; // Movido hacia la pared
+        const tableGroup = new THREE.Group();
         
-        // Piso 1
-        const c1 = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 1.5, 32), matCakeBase);
-        c1.position.y = 0.85;
-        c1.castShadow = true;
-        cakeGroup.add(c1);
+        const tableTopGeo = new THREE.CylinderGeometry(5, 5, 0.35, 32);
+        // Subir la parte que sostiene el pastel
+        tableTopGeo.translate(0, 2.5, 0);
+        const tableTop = new THREE.Mesh(tableTopGeo, matTable);
+        tableTop.receiveShadow = true;
+        tableGroup.add(tableTop);
 
-        // Piso 2
-        const c2 = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 1.2, 32), matCakeTop);
-        c2.position.y = 2.2;
-        c2.castShadow = true;
-        cakeGroup.add(c2);
+        // Esta es la pata de la mesa
+        // Como manipular, lso 2 primeros valores son los que definen que tan ancho en el cilindro los 2 se suben paralelo osea el mismo valor
+        const legGeo = new THREE.CylinderGeometry(0.4, 0.4, 5, 16);
+        const leg = new THREE.Mesh(legGeo, new THREE.MeshStandardMaterial({color: 0x5c4033}));
+        // Posicion de la base de la mesa osea la pata
+        leg.position.y = 0;
+        tableGroup.add(leg);
+
+        const baseGeo = new THREE.CylinderGeometry(3, 3, 0.2, 16);
+        const tableBase = new THREE.Mesh(baseGeo, new THREE.MeshStandardMaterial({color: 0x5c4033}));
+        tableBase.position.y = -3;
+        tableGroup.add(tableBase);
+
+        // 3. Plato
+        const platoGeo = new THREE.CylinderGeometry(3.5, 3, 0.4, 32); // Geometría para un plato plano
+        // Lo subimos para que quede encima de la superficie de la mesa
+        platoGeo.translate(0, 2.825, 0); // 2.825 es la posición Y relativa al grupo de la mesa
+        const platoObjeto = new THREE.Mesh(platoGeo, matPlato);
+        platoObjeto.receiveShadow = true;
+        tableGroup.add(platoObjeto); // ¡Importante! Añadir el plato al grupo de la mesa
+
+        // Corregimos la posición de la mesa para que su base esté en el suelo (y=0)
+        tableGroup.position.set(0, -7, -12);
+        scene.add(tableGroup);
+
+        // 4. Pastel
+        const cakeGroup = new THREE.Group();
+        cakeGroup.position.set(0, -4, -12); // Ajustamos la altura para que se siente sobre el plato
+        
+        // Cuerpo del Pastel (1 Piso Grande)
+        const cakeGeo = new THREE.CylinderGeometry(2.5, 2.5, 2.0, 40);
+        const cakeMat = new THREE.MeshStandardMaterial({ color: 0xFFB7C5, roughness: 0.4 }); // Rosa pastel suave
+        const cakeBody = new THREE.Mesh(cakeGeo, cakeMat);
+        cakeBody.position.y = 1.0; 
+        cakeBody.castShadow = true;
+        cakeGroup.add(cakeBody);
+
+        // Decoración: Crema en los bordes (Esferas simulando manga pastelera)
+        const creamGeo = new THREE.SphereGeometry(0.25, 16, 16);
+        const creamMat = new THREE.MeshStandardMaterial({ color: 0xFFFFF0, roughness: 0.2 }); // Blanco crema
+        
+        const numBlobs = 30;
+        const radius = 2.4;
+        
+        // Función para crear anillos de crema
+        const createPiping = (yPos) => {
+            for(let i=0; i<numBlobs; i++) {
+                const angle = (i / numBlobs) * Math.PI * 2;
+                const blob = new THREE.Mesh(creamGeo, creamMat);
+                blob.position.set(Math.cos(angle)*radius, yPos, Math.sin(angle)*radius);
+                cakeGroup.add(blob);
+            }
+        };
+        
+        createPiping(2.0); // Borde superior
+        createPiping(0.1); // Borde inferior
 
         scene.add(cakeGroup);
 
@@ -235,9 +270,10 @@
         // Textura por defecto (gris oscuro hasta que haya foto)
         let photoTexture = new THREE.TextureLoader().load('data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'); 
         // Transparente inicialmente
-        const photoMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 }); 
+        const photoMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, fog: false }); 
         const photoMesh = new THREE.Mesh(photoGeo, photoMat);
         photoMesh.position.z = 0.1; 
+        photoMesh.position.y = -5; 
 
         frameGroup.add(photoMesh);
         frameGroup.position.set(0, 7, -19.9); // Pegado casi a la pared de fondo
@@ -248,36 +284,38 @@
         loader.load('https://unpkg.com/three@0.160.0/examples/fonts/helvetiker_regular.typeface.json', function (font) {
             
             // Texto: Feliz Cumple Majo
-            const textGeo = new TextGeometry('Feliz Cumple\n     Majo', {
+            const textGeo = new TextGeometry('  Feliz Cumple \n \n    Majo D.T.B.', {
                 font: font,
                 size: 0.3,
                 height: 0.05,
             });
+            textGeo.center(); // Centrar geometría para manejarla mejor
             const textMesh = new THREE.Mesh(textGeo, new THREE.MeshStandardMaterial({ color: 0xFF1493 }));
-            textMesh.position.set(-1.2, 2.3, 1.6); // Frente al pastel
-            textMesh.rotation.x = -0.1;
+            textMesh.position.set(0, 2.05, 1);
+            textMesh.rotation.x = -Math.PI / 2;
             cakeGroup.add(textMesh);
 
-            // Vela "2"
-            const v2Geo = new TextGeometry('2', { font: font, size: 0.6, height: 0.1 });
-            const v2 = new THREE.Mesh(v2Geo, new THREE.MeshStandardMaterial({ color: 'gold' }));
-            v2.position.set(-0.4, 3, 0);
+            // Vela # 1 "2"
+            const v2Geo = new TextGeometry('2', { font: font, size: 0.8, height: 0.1 });
+            const v2 = new THREE.Mesh(v2Geo, new THREE.MeshStandardMaterial({ color: 'red' }));
+            v2.position.set(-0.7, 2.1, -0.5); // Sobre la superficie y=2.0
             cakeGroup.add(v2);
 
-            // Vela "1"
-            const v1Geo = new TextGeometry('1', { font: font, size: 0.6, height: 0.1 });
-            const v1 = new THREE.Mesh(v1Geo, new THREE.MeshStandardMaterial({ color: 'gold' }));
-            v1.position.set(0.2, 3, 0);
+            // Vela # 2 "2"
+            const v1Geo = new TextGeometry('2', { font: font, size: 0.8, height: 0.1 });
+            const v1 = new THREE.Mesh(v1Geo, new THREE.MeshStandardMaterial({ color: 'red' }));
+            v1.position.set(-0.1, 2.1, -0.5);
             cakeGroup.add(v1);
 
             // Mechas y Llamas
             const createFlame = (x) => {
+                // Ajustar altura de mecha y llama según el nuevo tamaño de velas
                 const wick = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.3), new THREE.MeshBasicMaterial({color:0x000000}));
-                wick.position.set(x, 3.6, 0.05);
+                wick.position.set(x, 3, -0.45); 
                 cakeGroup.add(wick);
                 
                 const flame = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.2, 8), matFlame);
-                flame.position.set(x, 3.8, 0.05);
+                flame.position.set(x, 3.2, -0.45);
                 cakeGroup.add(flame);
                 
                 // Animación simple de llama
@@ -288,8 +326,8 @@
                 animateFlame();
             };
 
-            createFlame(-0.25); // Para el 2
-            createFlame(0.35);  // Para el 1
+            createFlame(-0.35); // Para el primer número (2)
+            createFlame(0.2);  // Para el Segundo número (2) (ajustado en X)
 
             // Ocultar loading
             document.getElementById('loading').style.display = 'none';
@@ -312,8 +350,12 @@
         // 1. Abrir Modo Foto
         btnPhotoMode.addEventListener('click', async () => {
             try {
-                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-                videoElement.srcObject = stream;
+                // Solo pedimos acceso si no tenemos un stream activo
+                if (!stream) {
+                    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                    videoElement.srcObject = stream;
+                }
+                videoElement.play(); // Aseguramos que se reproduzca si estaba pausado
                 photoUI.style.display = 'block';
                 btnPhotoMode.style.display = 'none'; // Ocultar botón principal
                 
@@ -326,7 +368,8 @@
 
         // 2. Cerrar Modo Foto (X)
         btnCloseCamera.addEventListener('click', () => {
-            stopCamera();
+            // stopCamera(); // YA NO detenemos la cámara para mantener el permiso
+            videoElement.pause(); // Solo pausamos el video para ahorrar recursos
             photoUI.style.display = 'none';
             btnPhotoMode.style.display = 'inline-block';
             moveCameraToFront(); // Volver a vista general
@@ -363,7 +406,7 @@
             photoMesh.material.needsUpdate = true;
 
             // Detener cámara y volver a la escena
-            stopCamera();
+            videoElement.pause(); // Solo pausamos, no desconectamos
             photoUI.style.display = 'none';
 
             // Mostrar controles de resultado
@@ -376,7 +419,7 @@
         function moveCameraToPosingPosition() {
             // Perspectiva "desde la pared":
             // Nos colocamos detrás del pastel (cerca de z = -20) y miramos hacia el centro (z = 0)
-            animateCamera(new THREE.Vector3(0, 5, -18), new THREE.Vector3(0, 1, 0));
+            animateCamera(new THREE.Vector3(0, -12, -20), new THREE.Vector3(0, -1, 0));
         }
 
         function moveCameraToFront() {
@@ -421,7 +464,7 @@
             mainControls.style.display = 'block';
 
             // --- Lógica de Guardado ---
-            const fileName = `cumple_majo_21_${Date.now()}.png`;
+            const fileName = `cumple_majo_22_${Date.now()}.png`;
             
             // Convertir Base64 a Blob para compartir
             const blob = await (await fetch(dataURL)).blob();
@@ -437,7 +480,7 @@
             if (navigator.share && navigator.canShare({ files: [file] })) {
                 try {
                     await navigator.share({
-                        title: 'Feliz Cumple Majo 21',
+                        title: 'Feliz Cumple Majo 22',
                         text: '¡Mira mi foto en la fiesta virtual de Majo!',
                         files: [file]
                     });
