@@ -170,20 +170,15 @@
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
         scene.add(ambientLight);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
         dirLight.position.set(5, 10, 7);
         dirLight.castShadow = true;
         scene.add(dirLight);
 
-        // Luz cenital (desde arriba)
-        const spotLight = new THREE.SpotLight(0xffffff, 0.8, 50, Math.PI / 4, 0.5, 2);
-        spotLight.position.set(0, 25, -12);
-        spotLight.target.position.set(0, 0, -12);
-        spotLight.castShadow = true;
-        scene.add(spotLight);
-        scene.add(spotLight.target);
-
-        // Luz de las velas (se crea con cada vela)
+        // Luz de las velas (PointLight)
+        const candleLight = new THREE.PointLight(0xffaa00, 1, 5);
+        candleLight.position.set(0, 3.5, 0);
+        scene.add(candleLight);
 
         // --- Materiales ---
         const matTable = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.6 });
@@ -270,37 +265,6 @@
 
         scene.add(cakeGroup);
 
-        // Decoraciones de Fiesta (Globos)
-        function createBalloon(color, position) {
-            const balloonGroup = new THREE.Group();
-            const balloonMat = new THREE.MeshStandardMaterial({
-                color: color,
-                roughness: 0.1,
-                metalness: 0.5,
-            });
-            const body = new THREE.Mesh(new THREE.SphereGeometry(1.5, 32, 32), balloonMat);
-            body.scale.y = 1.2; // Hacerlo un poco ovalado
-            balloonGroup.add(body);
-
-            const knot = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.2, 12), balloonMat);
-            knot.position.y = -1.5;
-            balloonGroup.add(knot);
-
-            balloonGroup.position.copy(position);
-            scene.add(balloonGroup);
-
-            // Animación de flotar
-            const initialY = position.y;
-            function float() {
-                balloonGroup.position.y = initialY + Math.sin(Date.now() * 0.0005 + position.x) * 0.5;
-                requestAnimationFrame(float);
-            }
-            float();
-        }
-        createBalloon(0xffd700, new THREE.Vector3(-10, 18, -15)); // Dorado
-        createBalloon(0xc0c0c0, new THREE.Vector3(10, 20, -10));  // Plateado
-        createBalloon(0xda70d6, new THREE.Vector3(8, 19, -18));   // Orquídea
-
         // 4. Contenedor en la pared (Marco para la foto)
         // La pared trasera está en Z = -20 (mitad de 40).
         const frameGroup = new THREE.Group();
@@ -350,31 +314,18 @@
 
             // Mechas y Llamas
             const createFlame = (x) => {
-                const flameGroup = new THREE.Group();
-
+                // Ajustar altura de mecha y llama según el nuevo tamaño de velas
                 const wick = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.3), new THREE.MeshBasicMaterial({color:0x000000}));
-                flameGroup.add(wick);
+                wick.position.set(x, 3, -0.45); 
+                cakeGroup.add(wick);
                 
-                const flameOuter = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 16), new THREE.MeshBasicMaterial({ color: 0xFF6600, transparent: true, opacity: 0.8 }));
-                const flameInner = new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 16), new THREE.MeshBasicMaterial({ color: 0xFFD700 }));
-                flameOuter.position.y = 0.25;
-                flameInner.position.y = 0.2;
-                flameGroup.add(flameOuter, flameInner);
-
-                // Luz que emite la vela
-                const candleLight = new THREE.PointLight(0xffaa33, 0.7, 4, 2);
-                candleLight.position.y = 0.4;
-                flameGroup.add(candleLight);
-
-                flameGroup.position.set(x, 3.0, -0.45);
-                cakeGroup.add(flameGroup);
+                const flame = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.2, 8), matFlame);
+                flame.position.set(x, 3.2, -0.45);
+                cakeGroup.add(flame);
                 
-                // Animación de parpadeo más realista
+                // Animación simple de llama
                 const animateFlame = () => {
-                    const time = Date.now() * 0.005;
-                    flameOuter.scale.y = 1 + Math.sin(time * 2.1 + x) * 0.2;
-                    flameOuter.scale.x = 1 + Math.cos(time * 1.7 + x) * 0.15;
-                    flameInner.scale.copy(flameOuter.scale).multiplyScalar(0.6);
+                    flame.scale.y = 1 + Math.random() * 0.2;
                     requestAnimationFrame(animateFlame);
                 }
                 animateFlame();
@@ -572,7 +523,7 @@
             controls.enableZoom = true;
 
             // Posición ideal para ver pastel y foto de fondo
-            animateCamera(new THREE.Vector3(0, 0, 12), new THREE.Vector3(0, -2, 0));
+            animateCamera(new THREE.Vector3(0, 4, 12), new THREE.Vector3(0, 1, 0));
         }
 
         function animateCamera(targetPos, lookAt, onComplete) {
