@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feliz Cumple Majo - 21</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #333; font-family: 'Arial', sans-serif; }
+        #canvas-container { width: 100vw; height: 100vh; display: block; }
+        
+        /* UI Overlay General */
+        .ui-layer {
+            position: absolute;
+            pointer-events: none; /* Permite clickear el 3D a través */
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* Botones interactivos */
+        .btn {
+            pointer-events: auto;
+            background: rgba(255, 105, 180, 0.9);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 18px;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: transform 0.2s, background 0.2s;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        .btn:active { transform: scale(0.95); }
+        .btn-icon { font-size: 24px; padding: 15px; border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;}
+        
+        /* Modo Foto UI */
+        #photo-ui {
+            display: none;
+            position: absolute;
+            top: 20px; 
+            left: 20px; 
+            width: 150px; 
+            height: 200px;
+            background: #000;
+            border: 4px solid white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            z-index: 10;
+            pointer-events: auto;
+        }
+        #camera-feed {
+            width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); border-radius: 6px;
+        }
+        .camera-controls {
+            position: absolute; bottom: 30px; width: 100%;
+            display: flex; justify-content: center;
+        }
+        .close-camera {
+            position: absolute; top: -15px; right: -15px;
+            background: red; color: white; width: 30px; height: 30px; border-radius: 50%; font-size: 18px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        /* Botones de acción principales */
+        #main-controls {
+            position: absolute; 
+            bottom: 30px; 
+            width: 100%; 
+            text-align: center;
+            pointer-events: none;
+        }
+        
+        #result-controls {
+            display: none; /* Se muestra después de tomar la foto */
+            pointer-events: auto;
+            gap: 15px;
+            justify-content: center;
+            width: 100%;
+        }
+
+        /* Loading Overlay */
+        #loading {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #ffb7b2; display: flex; align-items: center; justify-content: center;
+            z-index: 20; color: white; font-size: 24px; flex-direction: column;
+        }
+    </style>
+    <!-- Importar Three.js desde CDN -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    
+    <div id="loading">Cargando Pastel y Habitación...</div>
+
+    <div id="canvas-container"></div>
+
+    <!-- Contenedor del Botón Inicial (En la pared trasera virtualmente, pero botón físico aquí) -->
+    <div class="ui-layer">
+        <div id="main-controls">
+            <button id="btn-photo-mode" class="btn">📷 Modo Foto</button>
+            <div id="result-controls">
+                <button id="btn-retry" class="btn">Repetir Foto</button>
+                <button id="btn-share" class="btn">Compartir 🎁</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- UI de Cámara -->
+    <div id="photo-ui">
+        <video id="camera-feed" autoplay playsinline></video>
+        <button class="close-camera" id="btn-close-camera">✕</button>
+        <div class="camera-controls">
+            <button id="btn-take-pic" class="btn btn-icon" style="background: white; color: black;">📷</button>
+        </div>
+    </div>
+
+    <!-- Canvas oculto para procesar texturas -->
+    <canvas id="temp-canvas" style="display:none;"></canvas>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+        import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+
+        // --- Configuración Escena ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xffe4e1); // Rosado muy pálido (habitacion)
+        scene.fog = new THREE.Fog(0xffe4e1, 10, 50);
+
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); // preserveDrawingBuffer necesario para captura
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        container.appendChild(renderer.domElement);
+
+        // --- Controles ---
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enablePan = false; // No mover la cámara lateralmente
+        controls.minDistance = 6;   // No entrar en el pastel
+        controls.maxDistance = 20;  // No salir de la habitación
+        controls.maxPolarAngle = Math.PI / 2 - 0.1; // No bajar del suelo
+        
+        // Posición inicial
+        camera.position.set(0, 4, 12);
+        controls.target.set(0, 1, 0); // Mirar al centro (pastel)
+        controls.update();
+
+        // --- Iluminación ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(5, 10, 7);
+        dirLight.castShadow = true;
+        scene.add(dirLight);
+
+        // Luz de las velas (PointLight)
+        const candleLight = new THREE.PointLight(0xffaa00, 1, 5);
+        candleLight.position.set(0, 3.5, 0);
+        scene.add(candleLight);
+
+        // --- Materiales ---
+        const matTable = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.6 });
+        const matCakeBase = new THREE.MeshStandardMaterial({ color: 0xFF69B4 }); // Rosa fuerte
+        const matCakeTop = new THREE.MeshStandardMaterial({ color: 0xFFC0CB }); // Rosa claro
+        const matCandle = new THREE.MeshStandardMaterial({ color: 0xFFFFFF });
+        const matFlame = new THREE.MeshBasicMaterial({ color: 0xFF4500 });
+        const matWall = new THREE.MeshStandardMaterial({ color: 0xFFF0F5, side: THREE.BackSide }); // Paredes
+
+        // --- Objetos 3D ---
+
+        // 1. Habitación (Caja grande invertida)
+        const roomGeo = new THREE.BoxGeometry(40, 30, 40);
+        const room = new THREE.Mesh(roomGeo, matWall);
+        room.position.y = 14.9; // Suelo en 0 aprox
+        room.receiveShadow = true;
+        scene.add(room);
+
+        // 2. Mesa
+        const tableGeo = new THREE.CylinderGeometry(4, 4, 0.2, 32);
+        const table = new THREE.Mesh(tableGeo, matTable);
+        table.position.y = 0;
+        table.position.z = -12; // Movido hacia la pared
+        table.receiveShadow = true;
+        scene.add(table);
+
+        // Patas de mesa (simple)
+        const legGeo = new THREE.CylinderGeometry(0.2, 0.2, 3, 16);
+        const leg = new THREE.Mesh(legGeo, new THREE.MeshStandardMaterial({color: 0x5c4033}));
+        leg.position.y = -1.5;
+        leg.position.z = -12; // Movido hacia la pared
+        scene.add(leg);
+
+        // 3. Pastel
+        const cakeGroup = new THREE.Group();
+        cakeGroup.position.z = -12; // Movido hacia la pared
+        
+        // Piso 1
+        const c1 = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 1.5, 32), matCakeBase);
+        c1.position.y = 0.85;
+        c1.castShadow = true;
+        cakeGroup.add(c1);
+
+        // Piso 2
+        const c2 = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 1.2, 32), matCakeTop);
+        c2.position.y = 2.2;
+        c2.castShadow = true;
+        cakeGroup.add(c2);
+
+        scene.add(cakeGroup);
+
+        // 4. Contenedor en la pared (Marco para la foto)
+        // La pared trasera está en Z = -20 (mitad de 40).
+        const frameGroup = new THREE.Group();
+        
+        // El lienzo de la foto
+        // Hacemos el contenedor más grande para que se vea bien detrás del pastel
+        const photoGeo = new THREE.PlaneGeometry(16, 12);
+        // Textura por defecto (gris oscuro hasta que haya foto)
+        let photoTexture = new THREE.TextureLoader().load('data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'); 
+        // Transparente inicialmente
+        const photoMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 }); 
+        const photoMesh = new THREE.Mesh(photoGeo, photoMat);
+        photoMesh.position.z = 0.1; 
+
+        frameGroup.add(photoMesh);
+        frameGroup.position.set(0, 7, -19.9); // Pegado casi a la pared de fondo
+        scene.add(frameGroup);
+
+        // 5. Texto y Velas (Cargamos fuente)
+        const loader = new FontLoader();
+        loader.load('https://unpkg.com/three@0.160.0/examples/fonts/helvetiker_regular.typeface.json', function (font) {
+            
+            // Texto: Feliz Cumple Majo
+            const textGeo = new TextGeometry('Feliz Cumple\n     Majo', {
+                font: font,
+                size: 0.3,
+                height: 0.05,
+            });
+            const textMesh = new THREE.Mesh(textGeo, new THREE.MeshStandardMaterial({ color: 0xFF1493 }));
+            textMesh.position.set(-1.2, 2.3, 1.6); // Frente al pastel
+            textMesh.rotation.x = -0.1;
+            cakeGroup.add(textMesh);
+
+            // Vela "2"
+            const v2Geo = new TextGeometry('2', { font: font, size: 0.6, height: 0.1 });
+            const v2 = new THREE.Mesh(v2Geo, new THREE.MeshStandardMaterial({ color: 'gold' }));
+            v2.position.set(-0.4, 3, 0);
+            cakeGroup.add(v2);
+
+            // Vela "1"
+            const v1Geo = new TextGeometry('1', { font: font, size: 0.6, height: 0.1 });
+            const v1 = new THREE.Mesh(v1Geo, new THREE.MeshStandardMaterial({ color: 'gold' }));
+            v1.position.set(0.2, 3, 0);
+            cakeGroup.add(v1);
+
+            // Mechas y Llamas
+            const createFlame = (x) => {
+                const wick = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.3), new THREE.MeshBasicMaterial({color:0x000000}));
+                wick.position.set(x, 3.6, 0.05);
+                cakeGroup.add(wick);
+                
+                const flame = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.2, 8), matFlame);
+                flame.position.set(x, 3.8, 0.05);
+                cakeGroup.add(flame);
+                
+                // Animación simple de llama
+                const animateFlame = () => {
+                    flame.scale.y = 1 + Math.random() * 0.2;
+                    requestAnimationFrame(animateFlame);
+                }
+                animateFlame();
+            };
+
+            createFlame(-0.25); // Para el 2
+            createFlame(0.35);  // Para el 1
+
+            // Ocultar loading
+            document.getElementById('loading').style.display = 'none';
+        });
+
+
+        // --- Lógica del Sistema ---
+
+        const btnPhotoMode = document.getElementById('btn-photo-mode');
+        const photoUI = document.getElementById('photo-ui');
+        const videoElement = document.getElementById('camera-feed');
+        const btnTakePic = document.getElementById('btn-take-pic');
+        const btnCloseCamera = document.getElementById('btn-close-camera');
+        const mainControls = document.getElementById('main-controls');
+        const resultControls = document.getElementById('result-controls');
+        const btnRetry = document.getElementById('btn-retry');
+        const btnShare = document.getElementById('btn-share');
+        let stream = null;
+
+        // 1. Abrir Modo Foto
+        btnPhotoMode.addEventListener('click', async () => {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                videoElement.srcObject = stream;
+                photoUI.style.display = 'block';
+                btnPhotoMode.style.display = 'none'; // Ocultar botón principal
+                
+                // Mover cámara 3D para encuadrar el pastel y el espacio vacío de la pared
+                moveCameraToPosingPosition();
+            } catch (err) {
+                alert("No se pudo acceder a la cámara: " + err);
+            }
+        });
+
+        // 2. Cerrar Modo Foto (X)
+        btnCloseCamera.addEventListener('click', () => {
+            stopCamera();
+            photoUI.style.display = 'none';
+            btnPhotoMode.style.display = 'inline-block';
+            moveCameraToFront(); // Volver a vista general
+        });
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+        }
+
+        // 3. Tomar Foto
+        btnTakePic.addEventListener('click', () => {
+            // Crear canvas temporal para capturar el frame del video
+            const tempCanvas = document.getElementById('temp-canvas');
+            const ctx = tempCanvas.getContext('2d');
+            tempCanvas.width = videoElement.videoWidth;
+            tempCanvas.height = videoElement.videoHeight;
+            
+            // Dibujar video (espejo horizontal para que se sienta natural como selfie)
+            ctx.translate(tempCanvas.width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(videoElement, 0, 0, tempCanvas.width, tempCanvas.height);
+
+            // Crear textura Three.js
+            const texture = new THREE.CanvasTexture(tempCanvas);
+            texture.colorSpace = THREE.SRGBColorSpace;
+            
+            // Aplicar al marco en la pared
+            photoMesh.material.map = texture;
+            photoMesh.material.color.set(0xffffff); // Resetear color base a blanco para ver textura bien
+            photoMesh.material.opacity = 1; // Hacer visible la foto
+            photoMesh.material.needsUpdate = true;
+
+            // Detener cámara y volver a la escena
+            stopCamera();
+            photoUI.style.display = 'none';
+
+            // Mostrar controles de resultado
+            btnPhotoMode.style.display = 'none';
+            resultControls.style.display = 'flex';
+
+            moveCameraToFront();
+        });
+
+        function moveCameraToPosingPosition() {
+            // Perspectiva "desde la pared":
+            // Nos colocamos detrás del pastel (cerca de z = -20) y miramos hacia el centro (z = 0)
+            animateCamera(new THREE.Vector3(0, 5, -18), new THREE.Vector3(0, 1, 0));
+        }
+
+        function moveCameraToFront() {
+            // Posición ideal para ver pastel y foto de fondo
+            animateCamera(new THREE.Vector3(0, 4, 12), new THREE.Vector3(0, 1, 0));
+        }
+
+        function animateCamera(targetPos, lookAt) {
+            // Animación simple
+            let alpha = 0;
+            const startPos = camera.position.clone();
+            
+            function animateCam() {
+                alpha += 0.03;
+                if (alpha > 1) alpha = 1;
+                camera.position.lerpVectors(startPos, targetPos, alpha);
+                controls.target.lerp(lookAt, 0.1);
+                controls.update();
+                if (alpha < 1) requestAnimationFrame(animateCam);
+            }
+            animateCam();
+        }
+
+        // 4. Repetir Foto
+        btnRetry.addEventListener('click', () => {
+            resultControls.style.display = 'none';
+            btnPhotoMode.click(); // Simular click para abrir cámara de nuevo
+        });
+
+        // 5. Compartir (Condensar y Guardar/Share)
+        btnShare.addEventListener('click', async () => {
+            // Ocultar UI temporalmente para la foto limpia
+            mainControls.style.display = 'none';
+            
+            // Renderizar un frame limpio
+            renderer.render(scene, camera);
+            
+            // Obtener DataURL
+            const dataURL = renderer.domElement.toDataURL("image/png");
+            
+            // Restaurar UI
+            mainControls.style.display = 'block';
+
+            // --- Lógica de Guardado ---
+            const fileName = `cumple_majo_21_${Date.now()}.png`;
+            
+            // Convertir Base64 a Blob para compartir
+            const blob = await (await fetch(dataURL)).blob();
+            const file = new File([blob], fileName, { type: blob.type });
+
+            // 1. Guardar en dispositivo (Descarga forzada)
+            const link = document.createElement('a');
+            link.href = dataURL;
+            link.download = fileName;
+            link.click();
+
+            // 2. Compartir usando API nativa (Web Share API)
+            if (navigator.share && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        title: 'Feliz Cumple Majo 21',
+                        text: '¡Mira mi foto en la fiesta virtual de Majo!',
+                        files: [file]
+                    });
+                } catch (error) {
+                    console.log('Error compartiendo:', error);
+                }
+            } else {
+                alert("Imagen guardada en tu galería.");
+            }
+        });
+
+        // --- Loop Principal ---
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Rotación suave del pastel si no se está interactuando
+            // cakeGroup.rotation.y += 0.005; 
+            
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Ajustar al redimensionar ventana
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
