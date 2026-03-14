@@ -360,7 +360,7 @@
                 const segmenterConfig = {
                     runtime: 'tfjs', 
                     modelType: 'general', // 'general' o 'landscape'
-                    modelUrl: './models/body-segmentation/model.json'
+                    modelUrl: 'models/body-segmentation/model.json'
                 };
                 segmenter = await bodySegmentation.createSegmenter(model, segmenterConfig);
                 console.log("IA Cargada correctamente");
