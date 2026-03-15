@@ -585,9 +585,7 @@
         // Decoracion de pelicula UP escalera
         const decoracionPeluculaUP = new THREE.Group();
         const matDecoracion = new THREE.MeshStandardMaterial({color: 0x5c4033});
-        const matBaseDecoracion = new THREE.MeshStandardMaterial({color: 0x8B4513});
-
-        // Base de la decoracion
+        const matBaseDecoracion = new THREE.MeshStandardMaterial({color: 0xBFA18F});
         const geoBasePeldanosDecoracion1  = new THREE.BoxGeometry(0.1, 0.7, 4);
         const base1PeldanosDecoracion = new THREE.Mesh(geoBasePeldanosDecoracion1, matBaseDecoracion);
         base1PeldanosDecoracion.position.set(-20, 2.3, 0.2);
@@ -605,59 +603,22 @@
         base4PeldanosDecoracion.position.set(-20, 3.8, 1.7);
         decoracionPeluculaUP.add(base4PeldanosDecoracion);
 
-        // Peldaños geometria
         const geoPeldanoDecoracion  = new THREE.BoxGeometry(1.5, 0.3, 1);
         const peldano1Decoracion = new THREE.Mesh(geoPeldanoDecoracion, matDecoracion);
         peldano1Decoracion.position.set(-20, 2.5, -1.3);
         decoracionPeluculaUP.add(peldano1Decoracion);
+
         const peldano2Decoracion = new THREE.Mesh(geoPeldanoDecoracion, matDecoracion);
         peldano2Decoracion.position.set(-20, 3, -0.3);
         decoracionPeluculaUP.add(peldano2Decoracion);
+
         const peldano3Decoracion = new THREE.Mesh(geoPeldanoDecoracion, matDecoracion);
         peldano3Decoracion.position.set(-20, 3.5, 0.7);
         decoracionPeluculaUP.add(peldano3Decoracion);
+
         const peldano4Decoracion = new THREE.Mesh(geoPeldanoDecoracion, matDecoracion);
         peldano4Decoracion.position.set(-20, 4, 1.7);
         decoracionPeluculaUP.add(peldano4Decoracion);
-
-        // Bases de barandas
-        const geoBaseBarandasDecoracion1  = new THREE.CylinderGeometry(0.03, 0.03, 0.6);
-        const base1BarandasDecoracion = new THREE.Mesh(geoBaseBarandasDecoracion1, matBaseDecoracion);
-        base1BarandasDecoracion.position.set(-19, 4.4, 2.6);
-        decoracionPeluculaUP.add(base1BarandasDecoracion);
-        const geoBaseBarandasDecoracion2  = new THREE.CylinderGeometry(0.03, 0.03, 0.6);
-        const base2BarandasDecoracion = new THREE.Mesh(geoBaseBarandasDecoracion2, matBaseDecoracion);
-        base2BarandasDecoracion.position.set(-19, 4.4, 1.7);
-        decoracionPeluculaUP.add(base2BarandasDecoracion);
-        const geoBaseBarandasDecoracion3  = new THREE.CylinderGeometry(0.03, 0.03, 0.6);
-        const base3BarandasDecoracion = new THREE.Mesh(geoBaseBarandasDecoracion3, matBaseDecoracion);
-        base3BarandasDecoracion.position.set(-19, 3.9, 0.7);
-        decoracionPeluculaUP.add(base3BarandasDecoracion);
-        const geoBaseBarandasDecoracion4  = new THREE.CylinderGeometry(0.03, 0.03, 0.6);
-        const base4BarandasDecoracion = new THREE.Mesh(geoBaseBarandasDecoracion4, matBaseDecoracion);
-        base4BarandasDecoracion.position.set(-19, 3.4, -0.3);
-        decoracionPeluculaUP.add(base4BarandasDecoracion);
-        const geoBaseBarandasDecoracion5  = new THREE.CylinderGeometry(0.03, 0.03, 0.6);
-        const base5BarandasDecoracion = new THREE.Mesh(geoBaseBarandasDecoracion5, matBaseDecoracion);
-        base5BarandasDecoracion.position.set(-19, 2.9, -1.3);
-        decoracionPeluculaUP.add(base5BarandasDecoracion);
-
-        //Barandas
-        const geoBarnadaDecoracion1  = new THREE.BoxGeometry(0.1, 0.3, 1.5);
-        const baranda1Decoracion = new THREE.Mesh(geoBarnadaDecoracion1, matBaseDecoracion);
-        baranda1Decoracion.position.set(-20, 4.8, 1.4);
-        decoracionPeluculaUP.add(baranda1Decoracion);
-        const geoBarnadaDecoracion2  = new THREE.BoxGeometry(0.1, 0.3, 3.5);
-        const baranda2Decoracion = new THREE.Mesh(geoBarnadaDecoracion2, matBaseDecoracion);
-        baranda2Decoracion.position.set(-20, 3.98, -0.8);
-        // Hacer que la baranda # 2 este inclinada en 45 grados hacia la izquierda
-        baranda2Decoracion.rotation.set(Math.PI / -6.3, 0, 0);
-        decoracionPeluculaUP.add(baranda2Decoracion);
-
-
-
-
-        //decoracionPeluculaUP.add(base3PeldanosDecoracion);
 
 
         escena.add(decoracionPeluculaUP);

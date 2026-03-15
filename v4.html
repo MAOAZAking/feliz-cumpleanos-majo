@@ -205,10 +205,6 @@
         import { FontLoader } from 'three/addons/loaders/FontLoader.js';
         import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 
-        // --- CONFIGURACIÓN BOMBILLO ---
-        // Modifica estos valores para mover el bombillo
-        const configBombillo = { x: 0, y: 13, z: -15 }; 
-
         // --- Configuración Escena ---
         const contenedor = document.getElementById('contenedor-canvas');
         const escena = new THREE.Scene();
@@ -245,7 +241,7 @@
         escena.add(luzDireccional);
 
         // Luz cenital (desde arriba)
-        const luzFocal = new THREE.SpotLight(0xffffff, 0.8, 50, Math.PI / 4, 0.7, 2);
+        const luzFocal = new THREE.SpotLight(0xffffff, 0.8, 50, Math.PI / 4, 0.5, 2);
         luzFocal.position.set(0, 25, -12); // Muy arriba
         luzFocal.target.position.set(0, 0, -12); // Apuntando al centro de la mesa
         luzFocal.castShadow = true;
@@ -276,14 +272,11 @@
             const imgData = ctx.getImageData(0, 0, width, height);
             const data = imgData.data;
             
-            const GrosorLineaEnMedioDeCadaOnda = 5;
-            const colorLineaEnMedioDeCadaOnda = 0x9C9C9C; // Gris medio
-            
-            const grosor = 10.0;
+            const grosor = 60.0;
             const numOndas = 15.0;
-            const frecuencia = 9.0;
-            const amplitud = 10.0;
-            const colorGris = 220;
+            const frecuencia = 3.0;
+            const amplitud = 20.0;
+            const colorGris = 180;
             const spacing = height / numOndas;
 
             for (let y = 0; y < height; y++) {
@@ -307,66 +300,24 @@
             return tex;
         }
 
-        // Función para crear textura de azulejo (Pared de enfrente)
-        function crearTexturaAzulejo() {
-            const width = 512;
-            const height = 512;
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            
-            // Fondo azul claro brillante
-            ctx.fillStyle = '#E0F7FA'; 
-            ctx.fillRect(0, 0, width, height);
-            
-            // Líneas de mortero
-            const cols = 4;
-            const rows = 4;
-            const tileW = width / cols;
-            const tileH = height / rows;
-            
-            ctx.strokeStyle = '#B0BEC5';
-            ctx.lineWidth = 4;
-            
-            // Dibujar rejilla
-            for(let i=0; i<=cols; i++) {
-                ctx.beginPath(); ctx.moveTo(i*tileW, 0); ctx.lineTo(i*tileW, height); ctx.stroke();
-            }
-            for(let i=0; i<=rows; i++) {
-                ctx.beginPath(); ctx.moveTo(0, i*tileH); ctx.lineTo(width, i*tileH); ctx.stroke();
-            }
-            
-            const tex = new THREE.CanvasTexture(canvas);
-            tex.colorSpace = THREE.SRGBColorSpace;
-            tex.wrapS = THREE.RepeatWrapping;
-            tex.wrapT = THREE.RepeatWrapping;
-            tex.repeat.set(5, 5);
-            return tex;
-        }
-
-        const materialParedOndas = new THREE.MeshStandardMaterial({ map: crearTexturaOndas(), side: THREE.BackSide });
-        const materialParedPlana = new THREE.MeshStandardMaterial({ color: 0xFFFFFF, side: THREE.BackSide }); // las demas paredes son blancas
-        const materialParedAzulejo = new THREE.MeshStandardMaterial({ map: crearTexturaAzulejo(), side: THREE.BackSide, roughness: 0.1, metalness: 0.1 }); // Brillante
+        const materialPared = new THREE.MeshStandardMaterial({ map: crearTexturaOndas(), side: THREE.BackSide });
         const materialTecho = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.BackSide });
-        
         const materialesHabitacion = [
-            materialParedAzulejo, // Derecha
-            materialParedPlana, // Izquierda
+            materialPared, // Derecha
+            materialPared, // Izquierda
             materialTecho, // Arriba (Techo)
-            materialParedPlana, // Abajo (Suelo invisible)
-            materialParedAzulejo, // Frente (Pared de enfrente)
-            materialParedOndas  // Atrás
+            materialPared, // Abajo (Suelo invisible)
+            materialPared, // Frente
+            materialPared  // Atrás
         ];
 
         // --- Objetos 3D ---
 
         // 1. Habitación (Caja grande invertida)
-        // Bajamos la altura para que el techo se vea más cerca (pegado a las bombas)
-        // Altura 25. Suelo en -10.1. Techo en -10.1 + 25 = 14.9
-        const geoHabitacion = new THREE.BoxGeometry(40, 25, 40);
+        // Bajamos la altura de 50 a 40 para que el techo se vea más cerca
+        const geoHabitacion = new THREE.BoxGeometry(40, 40, 40);
         const habitacion = new THREE.Mesh(geoHabitacion, materialesHabitacion);
-        habitacion.position.y = 2.4; // Ajustado: (25/2) - 10.1 = 12.5 - 10.1 = 2.4 para que el suelo siga en -10.1
+        habitacion.position.y = 9.9; // Ajustado: (40/2) - 10.1 = 9.9 para que el suelo siga en -10.1
         habitacion.receiveShadow = true;
         escena.add(habitacion);
 
@@ -474,7 +425,7 @@
         escena.add(grupoPastel);
 
         // Decoraciones de Fiesta (Globos)
-        function crearGlobo(color, position, targetPosition) {
+        function crearGlobo(color, position) {
             const grupoGlobo = new THREE.Group();
             const matGlobo = new THREE.MeshStandardMaterial({
                 color: color,
@@ -490,52 +441,25 @@
             nudo.position.y = -1.5;
             grupoGlobo.add(nudo);
 
-            // Cuerda
-            if (targetPosition) {
-                // La cuerda va desde el nudo (0, -1.5, 0 local) hasta el target
-                // Convertimos targetPosition a local del globo (que se mueve)
-                // Esto es complejo con animación, así que usaremos una línea que se actualice
-                // O más simple: un cilindro muy fino que apunte al regalo estático
-                // Como el globo se mueve, la cuerda debería estirarse/rotar. 
-                // Para simplificar en Three.js puro sin físicas: haremos la cuerda fija al regalo y que termine "dentro" del globo flotante
-                
-                const alturaCuerda = position.y - targetPosition.y - 1.5; // Distancia vertical aprox
-                const geoCuerda = new THREE.CylinderGeometry(0.02, 0.02, alturaCuerda);
-                const matCuerda = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });
-                const cuerda = new THREE.Mesh(geoCuerda, matCuerda);
-                cuerda.position.y = -1.5 - (alturaCuerda / 2);
-                grupoGlobo.add(cuerda);
-            }
-
             grupoGlobo.position.copy(position);
             escena.add(grupoGlobo);
 
             // Animación de flotar
             const yInicial = position.y;
             function flotar() {
-                // Movimiento suave arriba y abajo
-                // Reducimos la amplitud para que la cuerda no se vea mal desconectada
-                grupoGlobo.position.y = yInicial + Math.sin(Date.now() * 0.001 + position.x) * 0.2;
-                // Rotación leve
-                grupoGlobo.rotation.z = Math.sin(Date.now() * 0.0005) * 0.05;
+                // Movimiento suave arriba y abajo (seno del tiempo)
+                grupoGlobo.position.y = yInicial + Math.sin(Date.now() * 0.0005 + position.x) * 0.5;
                 requestAnimationFrame(flotar);
             }
             flotar();
         }
-        
+        // Añadir globos en posiciones (X, Y, Z)
+        // Bajamos la altura (Y) de ~22 a ~17 para que se vean más
+        crearGlobo(0xffd700, new THREE.Vector3(-8, 17, -14)); // Dorado
+        crearGlobo(0xc0c0c0, new THREE.Vector3(7, 18, -11));  // Plateado
+        crearGlobo(0xda70d6, new THREE.Vector3(5, 16, -17));   // Orquídea
+
         // 6. Regalos encima de la mesa
-        // Definimos posiciones relativas a la mesa (que está en 0, -10.1, -12)
-        const posMesa = new THREE.Vector3(0, -10.1, -12);
-
-        // Helper para calcular posición global de un regalo
-        function getRegaloGlobalPos(localPos) {
-            return new THREE.Vector3(
-                posMesa.x + localPos.x,
-                posMesa.y + localPos.y, // Altura de la mesa + altura local regalo
-                posMesa.z + localPos.z
-            );
-        }
-
         function crearRegalo(color, colorListon, position, tamano) {
             const grupoRegalo = new THREE.Group();
             // Caja del regalo
@@ -560,109 +484,11 @@
         // X: -izquierda / +derecha
         // Y: altura (3.7 aprox para estar sobre la mesa)
         // Z: -atrás / +adelante
-        
-        // Posiciones locales de los regalos
-        const posR1 = new THREE.Vector3(-3.8, 8.4, -4.6);
-        const posR2 = new THREE.Vector3(3.5, 6.75, -4.2);
-        const posR3 = new THREE.Vector3(-4.0, 6.25, 1);
-
         crearRegalo(0xff69b4, 0xffff00, new THREE.Vector3(-3.5, 6.65, -4.5), 2.0); // Grande Rosa Izq Atrás
-        crearRegalo(0xffd700, 0x0000ff, posR1, 1.5); // Dorado Mas atrás
-        crearRegalo(0x00ffff, 0xff0000, posR2, 2.2); // Grande Cyan Der Atrás
-        crearRegalo(0x32cd32, 0xffffff, posR3, 1.2); // Verde
-        crearRegalo(0xba55d3, 0xffd700, new THREE.Vector3(4.0, 6.4, 2), 1.5); // Púrpura
-
-        // --- BOMBAS (Globos) SUJETAS A REGALOS ---
-        // Calculamos posición del regalo en el mundo y ponemos el globo arriba
-        // Regalo 1 (Dorado)
-        crearGlobo(0xffd700, getRegaloGlobalPos(posR1).add(new THREE.Vector3(0, 8, 0)), getRegaloGlobalPos(posR1)); 
-        // Regalo 2 (Cyan)
-        crearGlobo(0xc0c0c0, getRegaloGlobalPos(posR2).add(new THREE.Vector3(0, 7, 0)), getRegaloGlobalPos(posR2));
-        // Regalo 3 (Verde)
-        crearGlobo(0xda70d6, getRegaloGlobalPos(posR3).add(new THREE.Vector3(0, 5, -1)), getRegaloGlobalPos(posR3));
-
-
-        // Decoracion de pelicula UP escalera
-        const decoracionPeluculaUP = new THREE.Group();
-        const matDecoracion = new THREE.MeshStandardMaterial({color: 0x5c4033});
-        const matBaseDecoracion = new THREE.MeshStandardMaterial({color: 0x8B4513});
-
-        // Base de la decoracion
-        const geoBasePeldanosDecoracion1  = new THREE.BoxGeometry(0.1, 0.7, 4);
-        const base1PeldanosDecoracion = new THREE.Mesh(geoBasePeldanosDecoracion1, matBaseDecoracion);
-        base1PeldanosDecoracion.position.set(-20, 2.3, 0.2);
-        decoracionPeluculaUP.add(base1PeldanosDecoracion);
-        const geoBasePeldanosDecoracion2  = new THREE.BoxGeometry(0.1, 0.7, 3);
-        const base2PeldanosDecoracion = new THREE.Mesh(geoBasePeldanosDecoracion2, matBaseDecoracion);
-        base2PeldanosDecoracion.position.set(-20, 2.8, 0.7);
-        decoracionPeluculaUP.add(base2PeldanosDecoracion);
-        const geoBasePeldanosDecoracion3  = new THREE.BoxGeometry(0.1, 0.7, 2);
-        const base3PeldanosDecoracion = new THREE.Mesh(geoBasePeldanosDecoracion3, matBaseDecoracion);
-        base3PeldanosDecoracion.position.set(-20, 3.3, 1.2);
-        decoracionPeluculaUP.add(base3PeldanosDecoracion);
-        const geoBasePeldanosDecoracion4  = new THREE.BoxGeometry(0.1, 0.7, 1);
-        const base4PeldanosDecoracion = new THREE.Mesh(geoBasePeldanosDecoracion4, matBaseDecoracion);
-        base4PeldanosDecoracion.position.set(-20, 3.8, 1.7);
-        decoracionPeluculaUP.add(base4PeldanosDecoracion);
-
-        // Peldaños geometria
-        const geoPeldanoDecoracion  = new THREE.BoxGeometry(1.5, 0.3, 1);
-        const peldano1Decoracion = new THREE.Mesh(geoPeldanoDecoracion, matDecoracion);
-        peldano1Decoracion.position.set(-20, 2.5, -1.3);
-        decoracionPeluculaUP.add(peldano1Decoracion);
-        const peldano2Decoracion = new THREE.Mesh(geoPeldanoDecoracion, matDecoracion);
-        peldano2Decoracion.position.set(-20, 3, -0.3);
-        decoracionPeluculaUP.add(peldano2Decoracion);
-        const peldano3Decoracion = new THREE.Mesh(geoPeldanoDecoracion, matDecoracion);
-        peldano3Decoracion.position.set(-20, 3.5, 0.7);
-        decoracionPeluculaUP.add(peldano3Decoracion);
-        const peldano4Decoracion = new THREE.Mesh(geoPeldanoDecoracion, matDecoracion);
-        peldano4Decoracion.position.set(-20, 4, 1.7);
-        decoracionPeluculaUP.add(peldano4Decoracion);
-
-        // Bases de barandas
-        const geoBaseBarandasDecoracion1  = new THREE.CylinderGeometry(0.03, 0.03, 0.6);
-        const base1BarandasDecoracion = new THREE.Mesh(geoBaseBarandasDecoracion1, matBaseDecoracion);
-        base1BarandasDecoracion.position.set(-19, 4.4, 2.6);
-        decoracionPeluculaUP.add(base1BarandasDecoracion);
-        const geoBaseBarandasDecoracion2  = new THREE.CylinderGeometry(0.03, 0.03, 0.6);
-        const base2BarandasDecoracion = new THREE.Mesh(geoBaseBarandasDecoracion2, matBaseDecoracion);
-        base2BarandasDecoracion.position.set(-19, 4.4, 1.7);
-        decoracionPeluculaUP.add(base2BarandasDecoracion);
-        const geoBaseBarandasDecoracion3  = new THREE.CylinderGeometry(0.03, 0.03, 0.6);
-        const base3BarandasDecoracion = new THREE.Mesh(geoBaseBarandasDecoracion3, matBaseDecoracion);
-        base3BarandasDecoracion.position.set(-19, 3.9, 0.7);
-        decoracionPeluculaUP.add(base3BarandasDecoracion);
-        const geoBaseBarandasDecoracion4  = new THREE.CylinderGeometry(0.03, 0.03, 0.6);
-        const base4BarandasDecoracion = new THREE.Mesh(geoBaseBarandasDecoracion4, matBaseDecoracion);
-        base4BarandasDecoracion.position.set(-19, 3.4, -0.3);
-        decoracionPeluculaUP.add(base4BarandasDecoracion);
-        const geoBaseBarandasDecoracion5  = new THREE.CylinderGeometry(0.03, 0.03, 0.6);
-        const base5BarandasDecoracion = new THREE.Mesh(geoBaseBarandasDecoracion5, matBaseDecoracion);
-        base5BarandasDecoracion.position.set(-19, 2.9, -1.3);
-        decoracionPeluculaUP.add(base5BarandasDecoracion);
-
-        //Barandas
-        const geoBarnadaDecoracion1  = new THREE.BoxGeometry(0.1, 0.3, 1.5);
-        const baranda1Decoracion = new THREE.Mesh(geoBarnadaDecoracion1, matBaseDecoracion);
-        baranda1Decoracion.position.set(-20, 4.8, 1.4);
-        decoracionPeluculaUP.add(baranda1Decoracion);
-        const geoBarnadaDecoracion2  = new THREE.BoxGeometry(0.1, 0.3, 3.5);
-        const baranda2Decoracion = new THREE.Mesh(geoBarnadaDecoracion2, matBaseDecoracion);
-        baranda2Decoracion.position.set(-20, 3.98, -0.8);
-        // Hacer que la baranda # 2 este inclinada en 45 grados hacia la izquierda
-        baranda2Decoracion.rotation.set(Math.PI / -6.3, 0, 0);
-        decoracionPeluculaUP.add(baranda2Decoracion);
-
-
-
-
-        //decoracionPeluculaUP.add(base3PeldanosDecoracion);
-
-
-        escena.add(decoracionPeluculaUP);
-
-
+        crearRegalo(0x00ffff, 0xff0000, new THREE.Vector3(3.5, 6.75, -4.2), 2.2); // Grande Cyan Der Atrás
+        crearRegalo(0x32cd32, 0xffffff, new THREE.Vector3(-4.0, 6.25, 1), 1.2);  // Verde Lima Izq Medio
+        crearRegalo(0xba55d3, 0xffd700, new THREE.Vector3(4.0, 6.4, 2), 1.5);  // Púrpura Der Medio
+        crearRegalo(0xffd700, 0x0000ff, new THREE.Vector3(0, 6.15, -4.8), 1.0);    // Dorado Mas atrás
 
         // --- Ventana y Puerta (Pared Izquierda X = -20) ---
         // zPos: posición en profundidad
@@ -671,8 +497,7 @@
         // tipo: 'ventana' o 'puerta'
         function crearElementoPared(zPos, yPos, ancho, alto, tipo) {
             const grupo = new THREE.Group();
-            const colorMarco = 0xFFFFFF; // Marco de madera
-            const contornoMarco = 0x9C9C9C; // Colro del contorno del marco para que se vea
+            const colorMarco = 0x5c4033; // Marco de madera
             
             // Marco exterior
             const geoMarcoH = new THREE.BoxGeometry(0.5, 0.5, ancho + 0.5); // Se extiende para cubrir las esquinas
@@ -692,56 +517,14 @@
 
             if (tipo === 'ventana') {
                 // Ventana: Cristal y división vertical
-                // Material de vidrio con reflexión (MeshPhysicalMaterial para mejor efecto)
-                const matVidrio = new THREE.MeshPhysicalMaterial({
-                    color: 0x87CEEB,
-                    metalness: 0.1,
-                    roughness: 0.05,
-                    transmission: 0.2, // Un poco transparente
-                    transparent: true,
-                    opacity: 0.6,
-                    reflectivity: 0.8,
-                    clearcoat: 1.0,
-                    side: THREE.DoubleSide
-                });
-
                 const geoCristal = new THREE.PlaneGeometry(ancho - 0.5, alto - 0.5);
-                const mallaCristal = new THREE.Mesh(geoCristal, matVidrio); // Cielo azul con reflejo
+                const mallaCristal = new THREE.Mesh(geoCristal, new THREE.MeshBasicMaterial({color: 0x87CEEB})); // Cielo azul
                 mallaCristal.rotation.y = Math.PI / 2;
                 grupo.add(mallaCristal);
 
                 // División Vertical
                 const divisor = new THREE.Mesh(new THREE.BoxGeometry(0.3, alto, 0.2), matMarco);
                 grupo.add(divisor);
-
-                // Anjeo (Mosquitero) en el vidrio izquierdo
-                // El vidrio está en el plano X local. Ancho es Z. Izquierda es Z negativo.
-                // Creamos un plano para el anjeo en la mitad izquierda
-                const geoAnjeo = new THREE.PlaneGeometry((ancho - 0.5) / 2, alto - 0.5);
-                
-                // Textura de rejilla para el anjeo
-                const canvasAnjeo = document.createElement('canvas');
-                canvasAnjeo.width = 64; canvasAnjeo.height = 64;
-                const ctxAnjeo = canvasAnjeo.getContext('2d');
-                ctxAnjeo.fillStyle = 'rgba(0,0,0,0)'; ctxAnjeo.fillRect(0,0,64,64); // Transparente
-                ctxAnjeo.strokeStyle = 'rgba(30,30,30,0.7)'; ctxAnjeo.lineWidth = 2; // Rejilla oscura
-                const step = 8;
-                for(let i=0; i<64; i+=step) {
-                    ctxAnjeo.beginPath(); ctxAnjeo.moveTo(i,0); ctxAnjeo.lineTo(i,64); ctxAnjeo.stroke();
-                    ctxAnjeo.beginPath(); ctxAnjeo.moveTo(0,i); ctxAnjeo.lineTo(64,i); ctxAnjeo.stroke();
-                }
-                const texAnjeo = new THREE.CanvasTexture(canvasAnjeo);
-                texAnjeo.wrapS = THREE.RepeatWrapping; texAnjeo.wrapT = THREE.RepeatWrapping;
-                texAnjeo.repeat.set(10, 20);
-
-                const matAnjeo = new THREE.MeshBasicMaterial({ map: texAnjeo, transparent: true, side: THREE.DoubleSide });
-                const mallaAnjeo = new THREE.Mesh(geoAnjeo, matAnjeo);
-                mallaAnjeo.rotation.y = Math.PI / 2;
-                mallaAnjeo.position.x = 0.1; 
-                // MOVIDO: A la "otra ventanada" (lado derecho, Z positivo local)
-                mallaAnjeo.position.z = (ancho - 0.5) / 4; 
-                grupo.add(mallaAnjeo);
-
             } else if (tipo === 'puerta') {
                 // Puerta: Panel de madera
                 const geoPuerta = new THREE.BoxGeometry(0.2, alto - 0.5, ancho - 0.5);
@@ -796,31 +579,6 @@
                 }
             }
         }
-
-        // --- BOMBILLO EN EL TECHO ---
-        function crearBombillo() {
-            const grupoLuz = new THREE.Group();
-            grupoLuz.position.set(configBombillo.x, configBombillo.y, configBombillo.z);
-
-            // Cable
-            const cable = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3), new THREE.MeshStandardMaterial({color: 0x111111}));
-            cable.position.y = 1.5; // Colgando hacia arriba desde el centro del grupo
-            grupoLuz.add(cable);
-
-            // Bombilla
-            const geoBombilla = new THREE.SphereGeometry(0.5, 16, 16);
-            const matBombilla = new THREE.MeshBasicMaterial({ color: 0xFFFFAA }); // Amarillo brillante, autoiluminado
-            const bombilla = new THREE.Mesh(geoBombilla, matBombilla);
-            grupoLuz.add(bombilla);
-
-            // Luz PointLight que emana del bombillo
-            const luz = new THREE.PointLight(0xFFFFAA, 0.8, 25);
-            luz.castShadow = true;
-            grupoLuz.add(luz);
-
-            escena.add(grupoLuz);
-        }
-        crearBombillo();
 
         // 5. Texto y Velas (Cargamos fuente)
         const cargadorFuentes = new FontLoader();
@@ -884,37 +642,6 @@
 
             crearLlama(-0.35); // Para el primer número (2)
             crearLlama(0.2);  // Para el Segundo número (2) (ajustado en X)
-
-            // --- LETRERO "FELIZ CUMPLE" CURVO (Pared de Enfrente / Tiles / +Z) ---
-            // La pared está en Z = 20. El letrero debe mirar hacia -Z (hacia adentro).
-            const grupoLetrero = new THREE.Group();
-            const mensaje = "FELIZ CUMPLE";
-            const radioArco = 8;
-            const anguloTotal = Math.PI / 3; // 60 grados de arco
-            const pasoAngulo = anguloTotal / (mensaje.length - 1);
-            const inicioAngulo = Math.PI / 2 + anguloTotal / 2; // Centrado arriba
-
-            for (let i = 0; i < mensaje.length; i++) {
-                const letra = mensaje[i];
-                if(letra === ' ') continue;
-                const geoLetra = new TextGeometry(letra, { font: fuente, size: 1.2, height: 0.2 });
-                geoLetra.center();
-                const mallaLetra = new THREE.Mesh(geoLetra, new THREE.MeshStandardMaterial({ color: 0xFF4500 })); // Naranja rojizo
-                
-                const angulo = inicioAngulo - i * pasoAngulo;
-                // Posición en arco: x = cos, y = sin. 
-                mallaLetra.position.set(Math.cos(angulo) * radioArco * 1.5, Math.sin(angulo) * radioArco * 0.5, 0);
-                // Rotar para seguir el arco? No, el usuario dijo "curvo hacia arriba" (como sonrisa o arcoiris). 
-                // Simplemente posicionamos las letras en arco.
-                // Ajuste de rotación individual si se desea:
-                // mallaLetra.rotation.z = angulo - Math.PI / 2;
-                
-                grupoLetrero.add(mallaLetra);
-            }
-            // Posicionar el grupo en la pared de azulejos
-            grupoLetrero.rotation.y = Math.PI; // Mirar hacia el centro (hacia -Z)
-            grupoLetrero.position.set(0, 8, 19.5); // Pared en 20, un poco antes
-            escena.add(grupoLetrero);
 
             fuenteCargada = true;
             verificarListo();
@@ -1042,10 +769,9 @@
             ctx.drawImage(elementoVideo, 0, 0, canvasTemporal.width, canvasTemporal.height); // Dibujar a la nueva resolución
             ctx.restore(); // Restaurar para que las siguientes operaciones no estén invertidas
 
-            // Pausar el video para "congelar" la imagen en la UI
-            elementoVideo.pause();
             // 2. Mensaje secundario: Procesando (Ya se capturó el frame, ahora es seguro moverse)
             mensajeEstado.textContent = "Ya puedes moverte, estamos haciendo unos retoques finales a la foto...";
+            detenerCamara(); // Detener la cámara
 
             // --- APLICAR IA (Recorte de Fondo) ---
             if (segmentador) {
@@ -1092,7 +818,8 @@
             mallaFoto.material.needsUpdate = true;
 
             // Detener cámara y volver a la escena
-            detenerCamara(); // Ahora detenemos la cámara, después de todo el procesamiento
+            elementoVideo.pause(); // Solo pausamos, no desconectamos
+            detenerCamara();
             interfazFoto.style.display = 'none';
             botonTomarFoto.textContent = "📷"; // Restaurar icono
             mensajeEstado.style.display = 'none'; // Ocultar mensaje
