@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -221,13 +221,14 @@
         // --- Controles ---
         const controles = new OrbitControls(camara, renderizador.domElement);
         controles.enablePan = false; // Bloquear movimiento lateral de la cámara
-        controles.minDistance = 5;   // Distancia mínima (para no atravesar el pastel)
-        controles.maxDistance = 30;  // Distancia máxima (para no salir del cuarto)
+        controles.enableZoom = false; // Bloquear zoom para sensación de "estar parado"
         controles.maxPolarAngle = Math.PI; // Permitir mirar hasta arriba
+        controles.rotateSpeed = -0.5; // Invertir rotación para sensación de "mirar alrededor" (drag to look)
         
         // Posición inicial
+        // Colocamos el target muy cerca de la cámara para que rote sobre su eje
         camara.position.set(0, 5, 15); // X=0 (centro), Y=5 (altura), Z=15 (profundidad)
-        controles.target.set(0, -3, -12); // Hacia dónde mira la cámara (hacia el pastel)
+        controles.target.set(0, 5, 14); // Mira ligeramente hacia adelante
         controles.update();
 
         // --- Iluminación ---
@@ -313,9 +314,10 @@
         // --- Objetos 3D ---
 
         // 1. Habitación (Caja grande invertida)
-        const geoHabitacion = new THREE.BoxGeometry(40, 50, 40);
+        // Bajamos la altura de 50 a 40 para que el techo se vea más cerca
+        const geoHabitacion = new THREE.BoxGeometry(40, 40, 40);
         const habitacion = new THREE.Mesh(geoHabitacion, materialesHabitacion);
-        habitacion.position.y = 14.9; // Subir para que el suelo quede en Y=0 (aprox)
+        habitacion.position.y = 9.9; // Ajustado: (40/2) - 10.1 = 9.9 para que el suelo siga en -10.1
         habitacion.receiveShadow = true;
         escena.add(habitacion);
 
@@ -452,9 +454,10 @@
             flotar();
         }
         // Añadir globos en posiciones (X, Y, Z)
-        crearGlobo(0xffd700, new THREE.Vector3(-8, 22, -14)); // Dorado
-        crearGlobo(0xc0c0c0, new THREE.Vector3(7, 24, -11));  // Plateado
-        crearGlobo(0xda70d6, new THREE.Vector3(5, 23, -17));   // Orquídea
+        // Bajamos la altura (Y) de ~22 a ~17 para que se vean más
+        crearGlobo(0xffd700, new THREE.Vector3(-8, 17, -14)); // Dorado
+        crearGlobo(0xc0c0c0, new THREE.Vector3(7, 18, -11));  // Plateado
+        crearGlobo(0xda70d6, new THREE.Vector3(5, 16, -17));   // Orquídea
 
         // 6. Regalos encima de la mesa
         function crearRegalo(color, colorListon, position, tamano) {
@@ -846,6 +849,7 @@
                 const azimutActual = controles.getAzimuthalAngle();
                 controles.minAzimuthAngle = azimutActual - Math.PI / 6;
                 controles.maxAzimuthAngle = azimutActual + Math.PI / 6;
+                controles.rotateSpeed = 0.5; // Restaurar velocidad positiva para el modo "espejo"
 
                 controles.enableZoom = false;
             });
@@ -856,11 +860,12 @@
             controles.minAzimuthAngle = -Infinity;
             controles.maxAzimuthAngle = Infinity;
             controles.minPolarAngle = 0;
-            controles.maxPolarAngle = Math.PI / 2 - 0.1; // El valor original
-            controles.enableZoom = true;
+            controles.maxPolarAngle = Math.PI; // Permitir mirar arriba de nuevo
+            controles.enableZoom = false;
+            controles.rotateSpeed = -0.5; // Volver al modo "mirar alrededor"
 
-            // Vista Cenital para apreciar el texto del pastel y la foto de fondo
-            animarCamara(new THREE.Vector3(0, 5, 14), new THREE.Vector3(0, -3, -12));
+            // Volver a la posición central mirando al frente
+            animarCamara(new THREE.Vector3(0, 5, 15), new THREE.Vector3(0, 5, 14));
         }
 
         function animarCamara(posicionDestino, mirarA, alCompletar) {
