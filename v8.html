@@ -491,14 +491,20 @@
             grupoGlobo.add(nudo);
 
             // Cuerda
-            let cuerdaMesh = null;
             if (targetPosition) {
-                // Crear la cuerda como un objeto independiente en la escena para poder estirarla
-                const geoCuerda = new THREE.CylinderGeometry(0.02, 0.02, 1);
-                geoCuerda.translate(0, 0.5, 0); // Mover pivote a la base para facilitar escalado (aunque usaremos centro y escala)
+                // La cuerda va desde el nudo (0, -1.5, 0 local) hasta el target
+                // Convertimos targetPosition a local del globo (que se mueve)
+                // Esto es complejo con animación, así que usaremos una línea que se actualice
+                // O más simple: un cilindro muy fino que apunte al regalo estático
+                // Como el globo se mueve, la cuerda debería estirarse/rotar. 
+                // Para simplificar en Three.js puro sin físicas: haremos la cuerda fija al regalo y que termine "dentro" del globo flotante
+                
+                const alturaCuerda = position.y - targetPosition.y - 1.5; // Distancia vertical aprox
+                const geoCuerda = new THREE.CylinderGeometry(0.02, 0.02, alturaCuerda);
                 const matCuerda = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });
-                cuerdaMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1), matCuerda);
-                escena.add(cuerdaMesh);
+                const cuerda = new THREE.Mesh(geoCuerda, matCuerda);
+                cuerda.position.y = -1.5 - (alturaCuerda / 2);
+                grupoGlobo.add(cuerda);
             }
 
             grupoGlobo.position.copy(position);
@@ -508,27 +514,10 @@
             const yInicial = position.y;
             function flotar() {
                 // Movimiento suave arriba y abajo
-                grupoGlobo.position.y = yInicial + Math.sin(Date.now() * 0.001 + position.x) * 0.5;
+                // Reducimos la amplitud para que la cuerda no se vea mal desconectada
+                grupoGlobo.position.y = yInicial + Math.sin(Date.now() * 0.001 + position.x) * 0.2;
                 // Rotación leve
                 grupoGlobo.rotation.z = Math.sin(Date.now() * 0.0005) * 0.05;
-
-                // Actualizar la cuerda para que conecte el nudo con el regalo
-                if (cuerdaMesh && targetPosition) {
-                    const posNudo = grupoGlobo.position.clone();
-                    posNudo.y -= 1.5; // Ajustar al nudo
-                    
-                    const distancia = posNudo.distanceTo(targetPosition);
-                    const puntoMedio = posNudo.clone().add(targetPosition).multiplyScalar(0.5);
-                    
-                    // Mover cuerda al punto medio
-                    cuerdaMesh.position.copy(puntoMedio);
-                    // Orientar hacia el nudo
-                    cuerdaMesh.lookAt(posNudo); 
-                    // Rotar 90 grados en X porque CylinderGeometry está orientado en Y por defecto
-                    cuerdaMesh.rotateX(Math.PI / 2);
-                    // Escalar para cubrir la distancia
-                    cuerdaMesh.scale.set(1, distancia, 1);
-                }
                 requestAnimationFrame(flotar);
             }
             flotar();
@@ -896,88 +885,35 @@
             crearLlama(-0.35); // Para el primer número (2)
             crearLlama(0.2);  // Para el Segundo número (2) (ajustado en X)
 
-            // --- LETRERO "FELIZ CUMPLE" CURVO Y EN HOJAS (Pared de Ondas / -Z) ---
+            // --- LETRERO "FELIZ CUMPLE" CURVO (Pared de Enfrente / Tiles / +Z) ---
+            // La pared está en Z = 20. El letrero debe mirar hacia -Z (hacia adentro).
             const grupoLetrero = new THREE.Group();
             const mensaje = "FELIZ CUMPLE";
-            
-            // Parámetros del arco
-            const radioArco = 14; 
-            const anguloTotal = Math.PI / 2; // 90 grados de apertura
-            const anguloInicio = (Math.PI / 2) + (anguloTotal / 2); // Empezar desde la izquierda arriba
-            const pasoAngulo = anguloTotal / (mensaje.length + 1); // +1 para compensar espacios
-            const centroArco = new THREE.Vector3(0, -4, 0); // Centro virtual del círculo del arco
-
-            const puntosHilo = []; // Para guardar las coordenadas superiores de las hojas
-            let anguloActual = anguloInicio;
+            const radioArco = 8;
+            const anguloTotal = Math.PI / 3; // 60 grados de arco
+            const pasoAngulo = anguloTotal / (mensaje.length - 1);
+            const inicioAngulo = Math.PI / 2 + anguloTotal / 2; // Centrado arriba
 
             for (let i = 0; i < mensaje.length; i++) {
                 const letra = mensaje[i];
-                if (letra === ' ') {
-                    anguloActual -= pasoAngulo * 1.5; // Espacio extra entre palabras
-                    continue;
-                }
-
-                const grupoHoja = new THREE.Group();
-
-                // 1. Crear la hoja de papel con recorte
-                const anchoHoja = 2.0;
-                const altoHoja = 2.8;
-                const recorte = 0.6;
-                const formaHoja = new THREE.Shape();
-                formaHoja.moveTo(-anchoHoja / 2, altoHoja / 2);
-                formaHoja.lineTo(anchoHoja / 2, altoHoja / 2);
-                formaHoja.lineTo(anchoHoja / 2, -altoHoja / 2);
-                formaHoja.lineTo(0, -altoHoja / 2 + recorte);
-                formaHoja.lineTo(-anchoHoja / 2, -altoHoja / 2);
-                formaHoja.lineTo(-anchoHoja / 2, altoHoja / 2);
-
-                const geoHoja = new THREE.ShapeGeometry(formaHoja);
-                const matHoja = new THREE.MeshStandardMaterial({ color: 0xfff8e1, side: THREE.DoubleSide }); // Un color crema
-                const mallaHoja = new THREE.Mesh(geoHoja, matHoja);
-                mallaHoja.receiveShadow = true;
-                grupoHoja.add(mallaHoja);
-
-                // 2. Crear la letra
-                const geoLetra = new TextGeometry(letra, { font: fuente, size: 1.5, height: 0.05 });
+                if(letra === ' ') continue;
+                const geoLetra = new TextGeometry(letra, { font: fuente, size: 1.2, height: 0.2 });
                 geoLetra.center();
-                const matLetra = new THREE.MeshStandardMaterial({ color: 0xFF4500 }); // Naranja rojizo
-                const mallaLetra = new THREE.Mesh(geoLetra, matLetra);
-                mallaLetra.position.z = 0.05; // Ligeramente en frente de la hoja
-                mallaLetra.position.y = 0.2; // Centrarla un poco mejor verticalmente
-                grupoHoja.add(mallaLetra);
+                const mallaLetra = new THREE.Mesh(geoLetra, new THREE.MeshStandardMaterial({ color: 0xFF4500 })); // Naranja rojizo
                 
-                // 3. Posicionar en arco
-                const x = radioArco * Math.cos(anguloActual);
-                const y = radioArco * Math.sin(anguloActual) + centroArco.y;
+                const angulo = inicioAngulo - i * pasoAngulo;
+                // Posición en arco: x = cos, y = sin. 
+                mallaLetra.position.set(Math.cos(angulo) * radioArco * 1.5, Math.sin(angulo) * radioArco * 0.5, 0);
+                // Rotar para seguir el arco? No, el usuario dijo "curvo hacia arriba" (como sonrisa o arcoiris). 
+                // Simplemente posicionamos las letras en arco.
+                // Ajuste de rotación individual si se desea:
+                // mallaLetra.rotation.z = angulo - Math.PI / 2;
                 
-                grupoHoja.position.set(x, y, 0);
-                // Rotar para seguir la curvatura (tangente al radio)
-                grupoHoja.rotation.z = anguloActual - Math.PI / 2;
-                
-                grupoLetrero.add(grupoHoja);
-
-                // Calcular punto para el hilo (parte superior de la hoja, transformada al mundo del grupo)
-                // La hoja localmente tiene el top en Y = altoHoja/2.
-                // Creamos un vector, le aplicamos la rotación Z de la hoja y sumamos la posición.
-                const topLocal = new THREE.Vector3(0, altoHoja / 2 - 0.2, 0.1); 
-                topLocal.applyAxisAngle(new THREE.Vector3(0, 0, 1), grupoHoja.rotation.z);
-                topLocal.add(grupoHoja.position);
-                puntosHilo.push(topLocal);
-
-                anguloActual -= pasoAngulo;
+                grupoLetrero.add(mallaLetra);
             }
-
-            // 4. Crear el hilo que une las letras
-            if (puntosHilo.length > 0) {
-                const curvaHilo = new THREE.CatmullRomCurve3(puntosHilo);
-                const geoHilo = new THREE.TubeGeometry(curvaHilo, 64, 0.05, 8, false);
-                const matHilo = new THREE.MeshStandardMaterial({ color: 0xffffff });
-                const meshHilo = new THREE.Mesh(geoHilo, matHilo);
-                grupoLetrero.add(meshHilo);
-            }
-
-            // Posicionar el grupo en la pared de ondas (atrás)
-            grupoLetrero.position.set(0, 1, -19.8); // Ajuste de altura general
+            // Posicionar el grupo en la pared de azulejos
+            grupoLetrero.rotation.y = Math.PI; // Mirar hacia el centro (hacia -Z)
+            grupoLetrero.position.set(0, 8, 19.5); // Pared en 20, un poco antes
             escena.add(grupoLetrero);
 
             fuenteCargada = true;
@@ -1174,14 +1110,21 @@
             // Se coloca en z=-18 para estar detrás del pastel (z=-12) pero delante de la pared (z=-19.9)
             // Corregimos la altura (y=-1) para que no quede bajo el suelo y la vista (y=-3)
             animarCamara(new THREE.Vector3(0, -1, -19), new THREE.Vector3(0, -1, 0), () => {
-                // Una vez que la cámara llega, aplicamos el mismo estilo de control que la cámara principal.
-                controles.minAzimuthAngle = -Infinity;
-                controles.maxAzimuthAngle = Infinity;
-                controles.minPolarAngle = 0;
-                controles.maxPolarAngle = Math.PI; // Permitir mirar hasta arriba de nuevo
+                // Una vez que la cámara llega, limitamos los controles para simular
+                // que solo podemos mover la cabeza de lado a lado.
+                controles.update(); // Importante: Actualizar controles para leer el ángulo correcto
+
+                const anguloVertical = controles.getPolarAngle();
+                controles.minPolarAngle = anguloVertical;
+                controles.maxPolarAngle = anguloVertical;
+                
+                // Obtenemos el ángulo ACTUAL (que es ~180° por estar atrás) y limitamos alrededor de él
+                const azimutActual = controles.getAzimuthalAngle();
+                controles.minAzimuthAngle = azimutActual - Math.PI / 6;
+                controles.maxAzimuthAngle = azimutActual + Math.PI / 6;
+                controles.rotateSpeed = 0.5; // Restaurar velocidad positiva para el modo "espejo"
+
                 controles.enableZoom = false;
-                controles.rotateSpeed = -0.5; // Usar el modo "mirar alrededor" (drag to look)
-                controles.update();
             });
         }
 
