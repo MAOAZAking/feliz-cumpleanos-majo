@@ -157,8 +157,8 @@
     <script type="importmap">
         {
             "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+                "three": "/js/three.module.js",
+                "three/addons/": "/js/examples/jsm/"
             }
         }
     </script>
@@ -204,6 +204,7 @@
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { FontLoader } from 'three/addons/loaders/FontLoader.js';
         import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
         // --- CONFIGURACIÓN BOMBILLO ---
         // Modifica estos valores para mover el bombillo
@@ -593,10 +594,11 @@
         crearGlobo(0xda70d6, getRegaloGlobalPos(posR3).add(new THREE.Vector3(0, 5, -1)), getRegaloGlobalPos(posR3));
 
 
-        // Decoracion de pelicula UP escalera
+//////////////////////// Decoracion de pelicula UP escalera ////////////////////////
         const decoracionPeluculaUP = new THREE.Group();
         const matDecoracion = new THREE.MeshStandardMaterial({color: 0x5c4033});
         const matBaseDecoracion = new THREE.MeshStandardMaterial({color: 0x8B4513});
+
 
         // Base de la decoracion
         const geoBasePeldanosDecoracion1  = new THREE.BoxGeometry(0.1, 0.7, 4);
@@ -634,36 +636,67 @@
         // Bases de barandas
         const geoBaseBarandasDecoracion1  = new THREE.CylinderGeometry(0.03, 0.03, 0.6);
         const base1BarandasDecoracion = new THREE.Mesh(geoBaseBarandasDecoracion1, matBaseDecoracion);
-        base1BarandasDecoracion.position.set(-19, 4.4, 2.6);
+        base1BarandasDecoracion.position.set(-20, 4.4, 2.05); // Posicion antigua (-19, 4.4, 2.6)
         decoracionPeluculaUP.add(base1BarandasDecoracion);
         const geoBaseBarandasDecoracion2  = new THREE.CylinderGeometry(0.03, 0.03, 0.6);
         const base2BarandasDecoracion = new THREE.Mesh(geoBaseBarandasDecoracion2, matBaseDecoracion);
-        base2BarandasDecoracion.position.set(-19, 4.4, 1.7);
+        base2BarandasDecoracion.position.set(-20, 4.4, 1.45);
         decoracionPeluculaUP.add(base2BarandasDecoracion);
         const geoBaseBarandasDecoracion3  = new THREE.CylinderGeometry(0.03, 0.03, 0.6);
         const base3BarandasDecoracion = new THREE.Mesh(geoBaseBarandasDecoracion3, matBaseDecoracion);
-        base3BarandasDecoracion.position.set(-19, 3.9, 0.7);
+        base3BarandasDecoracion.position.set(-20, 3.9, 0.45);
         decoracionPeluculaUP.add(base3BarandasDecoracion);
         const geoBaseBarandasDecoracion4  = new THREE.CylinderGeometry(0.03, 0.03, 0.6);
         const base4BarandasDecoracion = new THREE.Mesh(geoBaseBarandasDecoracion4, matBaseDecoracion);
-        base4BarandasDecoracion.position.set(-19, 3.4, -0.3);
+        base4BarandasDecoracion.position.set(-20, 3.4, -0.55);
         decoracionPeluculaUP.add(base4BarandasDecoracion);
         const geoBaseBarandasDecoracion5  = new THREE.CylinderGeometry(0.03, 0.03, 0.6);
         const base5BarandasDecoracion = new THREE.Mesh(geoBaseBarandasDecoracion5, matBaseDecoracion);
-        base5BarandasDecoracion.position.set(-19, 2.9, -1.3);
+        base5BarandasDecoracion.position.set(-20, 2.9, -1.55);
         decoracionPeluculaUP.add(base5BarandasDecoracion);
 
         //Barandas
-        const geoBarnadaDecoracion1  = new THREE.BoxGeometry(0.1, 0.3, 1.5);
+        const geoBarnadaDecoracion1  = new THREE.BoxGeometry(0.1, 0.3, 1.05);
         const baranda1Decoracion = new THREE.Mesh(geoBarnadaDecoracion1, matBaseDecoracion);
-        baranda1Decoracion.position.set(-20, 4.8, 1.4);
+        baranda1Decoracion.position.set(-20, 4.8, 1.8);
         decoracionPeluculaUP.add(baranda1Decoracion);
-        const geoBarnadaDecoracion2  = new THREE.BoxGeometry(0.1, 0.3, 3.5);
+        const geoBarnadaDecoracion2  = new THREE.BoxGeometry(0.1, 0.3, 3.7);
         const baranda2Decoracion = new THREE.Mesh(geoBarnadaDecoracion2, matBaseDecoracion);
-        baranda2Decoracion.position.set(-20, 3.98, -0.8);
+        baranda2Decoracion.position.set(-20, 4, -0.34);
         // Hacer que la baranda # 2 este inclinada en 45 grados hacia la izquierda
-        baranda2Decoracion.rotation.set(Math.PI / -6.3, 0, 0);
+        baranda2Decoracion.rotation.set(Math.PI / -6.9, 0, 0);
         decoracionPeluculaUP.add(baranda2Decoracion);
+
+
+        // --- CONFIGURACIÓN MODELO GLB ---
+        // Modifica estos valores para mover el modelo
+        const configModelo = { x: -20, y: 2.6, z: -1.3, escala: 0.2, rotation: {X: 0, Y: Math.PI / 2, Z: 0}};
+        // --- Cargar Modelo GLB ---
+        const cargadorGLTF = new GLTFLoader();
+        cargadorGLTF.load(
+            'modelos_3d/carl_fredricksen.glb',
+            function (gltf) {
+                const modelo = gltf.scene;
+                modelo.position.set(configModelo.x, configModelo.y, configModelo.z);
+                modelo.scale.set(configModelo.escala, configModelo.escala, configModelo.escala);
+                modelo.rotation.set(configModelo.rotation.X, configModelo.rotation.Y, configModelo.rotation.Z);
+
+
+                // Recorrer el modelo para que todos los objetos emitan y reciban sombras
+                modelo.traverse(function (child) {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+                });
+
+                escena.add(modelo);
+            },
+            undefined, // onProgress (opcional)
+            function (error) {
+                console.error('Un error ocurrió al cargar el modelo GLB', error);
+            }
+        );
 
 
 
@@ -682,8 +715,7 @@
         // tipo: 'ventana' o 'puerta'
         function crearElementoPared(zPos, yPos, ancho, alto, tipo) {
             const grupo = new THREE.Group();
-            const colorMarco = 0xFFFFFF; // Marco de madera
-            const contornoMarco = 0x9C9C9C; // Colro del contorno del marco para que se vea
+            const colorMarco = 0xE0E0E0; // Marco de madera (blanco hueso para contraste)
             
             // Marco exterior
             const geoMarcoH = new THREE.BoxGeometry(0.5, 0.5, ancho + 0.5); // Se extiende para cubrir las esquinas
@@ -692,14 +724,18 @@
             
             const marcoSuperior = new THREE.Mesh(geoMarcoH, matMarco);
             marcoSuperior.position.y = (alto - 0.5) / 2;
-            const marcoInferior = new THREE.Mesh(geoMarcoH, matMarco);
-            marcoInferior.position.y = -(alto - 0.5) / 2;
+            grupo.add(marcoSuperior);
+            if (tipo !== 'puerta') {
+                const marcoInferior = new THREE.Mesh(geoMarcoH, matMarco);
+                marcoInferior.position.y = -(alto - 0.5) / 2;
+                grupo.add(marcoInferior);
+            }
             const marcoIzquierdo = new THREE.Mesh(geoMarcoV, matMarco);
             marcoIzquierdo.position.z = -ancho / 2; // Centrado en el borde
             const marcoDerecho = new THREE.Mesh(geoMarcoV, matMarco);
             marcoDerecho.position.z = ancho / 2; // Centrado en el borde
             
-            grupo.add(marcoSuperior, marcoInferior, marcoIzquierdo, marcoDerecho);
+            grupo.add(marcoIzquierdo, marcoDerecho);
 
             if (tipo === 'ventana') {
                 // Ventana: Cristal y división vertical
@@ -743,7 +779,7 @@
                 }
                 const texAnjeo = new THREE.CanvasTexture(canvasAnjeo);
                 texAnjeo.wrapS = THREE.RepeatWrapping; texAnjeo.wrapT = THREE.RepeatWrapping;
-                texAnjeo.repeat.set(10, 20);
+                texAnjeo.repeat.set(40, 80);
 
                 const matAnjeo = new THREE.MeshBasicMaterial({ map: texAnjeo, transparent: true, side: THREE.DoubleSide });
                 const mallaAnjeo = new THREE.Mesh(geoAnjeo, matAnjeo);
@@ -754,15 +790,53 @@
                 grupo.add(mallaAnjeo);
 
             } else if (tipo === 'puerta') {
-                // Puerta: Panel de madera
-                const geoPuerta = new THREE.BoxGeometry(0.2, alto - 0.5, ancho - 0.5);
-                const mallaPuerta = new THREE.Mesh(geoPuerta, new THREE.MeshStandardMaterial({color: 0x8B4513}));
-                grupo.add(mallaPuerta);
+                // Puerta: Panel de madera con patrón
+                const panelPuerta = new THREE.Group();
+                const numColumnas = 5;
+                const anchoColumna = (ancho - 0.5) / numColumnas;
+                const altoPuerta = alto - 0.5;
+                const matPuerta = new THREE.MeshStandardMaterial({color: 0x8B4513});
+
+                for (let i = 0; i < numColumnas; i++) {
+                    const esRecesada = i % 2 !== 0;
+                    const profundidadColumna = esRecesada ? 0.1 : 0.2;
+                    const posXColumna = esRecesada ? 0.05 : 0;
+
+                    const geoColumna = new THREE.BoxGeometry(profundidadColumna, altoPuerta, anchoColumna);
+                    const columna = new THREE.Mesh(geoColumna, matPuerta);
+
+                    columna.position.x = posXColumna;
+                    columna.position.z = -((ancho - 0.5) / 2) + (i * anchoColumna) + (anchoColumna / 2);
+                    
+                    panelPuerta.add(columna);
+                }
+                grupo.add(panelPuerta);
                 
-                // Manija
-                const manija = new THREE.Mesh(new THREE.SphereGeometry(0.3), new THREE.MeshStandardMaterial({color: 0xFFD700}));
-                manija.position.set(0.3, 0, ancho/2 - 1);
-                grupo.add(manija);
+                // Manija nueva
+                const grupoManija = new THREE.Group();
+                const matManija = new THREE.MeshStandardMaterial({color: 0xFFD700, metalness: 0.8, roughness: 0.2});
+
+                // Placa trasera ("oreja")
+                const geoPlaca = new THREE.BoxGeometry(0.2, 1.2, 0.6);
+                const placa = new THREE.Mesh(geoPlaca, matManija);
+                grupoManija.add(placa);
+
+                // Parte redonda para la llave
+                const geoCerradura = new THREE.CylinderGeometry(0.3, 0.3, 0.25, 20);
+                geoCerradura.rotateZ(Math.PI / 2); // Para que apunte hacia afuera
+                const cerradura = new THREE.Mesh(geoCerradura, matManija);
+                cerradura.position.x = 0.05;
+                grupoManija.add(cerradura);
+
+                // Ranura para la llave
+                const geoRanura = new THREE.BoxGeometry(0.3, 0.05, 0.2);
+                const matRanura = new THREE.MeshBasicMaterial({color: 0x111111});
+                const ranura = new THREE.Mesh(geoRanura, matRanura);
+                ranura.position.x = 0.06;
+                grupoManija.add(ranura);
+
+                grupoManija.position.set(0.3, 0, ancho/2 - 1);
+                grupo.add(grupoManija);
             }
 
             // Posicionar en la pared izquierda (X ~ -19.8 para que sobresalga un poco)
@@ -772,7 +846,7 @@
         // Ventana (Cerca del fondo, Z negativo)
         crearElementoPared(-8, 2, 8, 8, 'ventana');
         // Puerta (Más lejos del fondo, Z positivo)
-        crearElementoPared(8, -3, 7, 14, 'puerta');
+        crearElementoPared(8, -3.25, 7, 14, 'puerta');
 
         // 4. Contenedor en la pared (Marco para la foto)
         // La pared trasera está en Z = -20 (mitad de 40).
@@ -903,15 +977,16 @@
             // Parámetros del arco
             const radioArco = 14; 
             const anguloTotal = Math.PI / 2; // 90 grados de apertura
-            const anguloInicio = (Math.PI / 2) + (anguloTotal / 2); // Empezar desde la izquierda arriba
-            const pasoAngulo = anguloTotal / (mensaje.length + 1); // +1 para compensar espacios
+            const pasoAngulo = anguloTotal / (mensaje.length - 1);
+            const anguloInicio = Math.PI / 2 + anguloTotal / 2;
             const centroArco = new THREE.Vector3(0, -4, 0); // Centro virtual del círculo del arco
 
             const puntosHilo = []; // Para guardar las coordenadas superiores de las hojas
-            let anguloActual = anguloInicio;
 
             for (let i = 0; i < mensaje.length; i++) {
+                let anguloActual = anguloInicio - i * pasoAngulo;
                 const letra = mensaje[i];
+                
                 if (letra === ' ') {
                     anguloActual -= pasoAngulo * 1.5; // Espacio extra entre palabras
                     continue;
@@ -963,8 +1038,6 @@
                 topLocal.applyAxisAngle(new THREE.Vector3(0, 0, 1), grupoHoja.rotation.z);
                 topLocal.add(grupoHoja.position);
                 puntosHilo.push(topLocal);
-
-                anguloActual -= pasoAngulo;
             }
 
             // 4. Crear el hilo que une las letras
