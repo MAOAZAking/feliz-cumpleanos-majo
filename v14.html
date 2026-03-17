@@ -25,24 +25,7 @@
         
         /* Ajustes para móviles */
         @media (max-width: 600px) {
-            .btn {
-                padding: 15px 30px;
-                font-size: 20px;
-                width: 80%;
-                border: solid 3px black;
-                /* Animación de palpitar */
-                animation: palpitar 1s infinite;
-                }
-
-                /* Keyframes de la animación */
-                @keyframes palpitar {
-                0%, 100% {
-                    transform: scale(1);
-                }
-                50% {
-                    transform: scale(1.1); /* Aumenta tamaño al 110% */
-                }
-                }
+            .btn { padding: 15px 30px; font-size: 20px; width: 80%; }
             #interfaz-foto { width: 70vw; height: 40vh; left: 15vw; }
             .btn-icon { width: 70px; height: 70px; }
             #cargando { font-size: 18px; text-align: center; padding: 20px; }
@@ -71,7 +54,7 @@
             pointer-events: auto;
             background: rgba(255, 105, 180, 0.9);
             color: white;
-            border: solid 3px black;
+            border: none;
             padding: 12px 24px;
             font-size: 18px;
             border-radius: 30px;
@@ -80,19 +63,6 @@
             transition: transform 0.2s, background 0.2s;
             text-transform: uppercase;
             font-weight: bold;
-            /* Animación de palpitar */
-            animation: palpitar 1s infinite;
-            }
-
-            /* Keyframes de la animación */
-            @keyframes palpitar {
-            0%, 100% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.1); /* Aumenta tamaño al 110% */
-            }
-
         }
         .btn:active { transform: scale(0.95); }
         .btn-icon { font-size: 24px; padding: 15px; border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;}
@@ -212,7 +182,11 @@
             <button id="boton-modo-foto" class="btn">📷 Modo Foto </button>
             <div id="controles-resultado">
                 <button id="boton-repetir" class="btn">Repetir Foto</button>
-                <button id="boton-compartir" class="btn"><img src="svg/icono_compartir.svg" alt="Icono de compartir"> Compartir 🎁</button>
+                <button id="boton-compartir" class="btn"><!-- Icono compartir blanco pequeño -->
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 24 24">
+  <path d="M12 3l-5 5h3v6h4V8h3l-5-5z"/>
+  <path d="M5 14v5h14v-5h2v7H3v-7h2z"/>
+</svg> Compartir 🎁<img src="svg/icono_compartir.svg" alt="Icono de compartir"></button>
             </div>
         </div>
     </div>
@@ -1284,6 +1258,9 @@
 
             // 3. Mensaje secundario: Ya puedes moverte
             mensajeEstado.textContent = "Ya puedes moverte, estamos haciendo unos retoques finales a la foto...";
+
+            // Dar un frame para que se vea el mensaje antes de procesar IA
+            await new Promise(r => setTimeout(r, 1300));
 
             // --- APLICAR IA (Recorte de Fondo) ---
             if (segmentador) {

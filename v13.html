@@ -25,24 +25,7 @@
         
         /* Ajustes para móviles */
         @media (max-width: 600px) {
-            .btn {
-                padding: 15px 30px;
-                font-size: 20px;
-                width: 80%;
-                border: solid 3px black;
-                /* Animación de palpitar */
-                animation: palpitar 1s infinite;
-                }
-
-                /* Keyframes de la animación */
-                @keyframes palpitar {
-                0%, 100% {
-                    transform: scale(1);
-                }
-                50% {
-                    transform: scale(1.1); /* Aumenta tamaño al 110% */
-                }
-                }
+            .btn { padding: 15px 30px; font-size: 20px; width: 80%; }
             #interfaz-foto { width: 70vw; height: 40vh; left: 15vw; }
             .btn-icon { width: 70px; height: 70px; }
             #cargando { font-size: 18px; text-align: center; padding: 20px; }
@@ -71,7 +54,7 @@
             pointer-events: auto;
             background: rgba(255, 105, 180, 0.9);
             color: white;
-            border: solid 3px black;
+            border: none;
             padding: 12px 24px;
             font-size: 18px;
             border-radius: 30px;
@@ -80,19 +63,6 @@
             transition: transform 0.2s, background 0.2s;
             text-transform: uppercase;
             font-weight: bold;
-            /* Animación de palpitar */
-            animation: palpitar 1s infinite;
-            }
-
-            /* Keyframes de la animación */
-            @keyframes palpitar {
-            0%, 100% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.1); /* Aumenta tamaño al 110% */
-            }
-
         }
         .btn:active { transform: scale(0.95); }
         .btn-icon { font-size: 24px; padding: 15px; border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;}
@@ -212,7 +182,11 @@
             <button id="boton-modo-foto" class="btn">📷 Modo Foto </button>
             <div id="controles-resultado">
                 <button id="boton-repetir" class="btn">Repetir Foto</button>
-                <button id="boton-compartir" class="btn"><img src="svg/icono_compartir.svg" alt="Icono de compartir"> Compartir 🎁</button>
+                <button id="boton-compartir" class="btn"><!-- Icono compartir blanco pequeño -->
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 24 24">
+  <path d="M12 3l-5 5h3v6h4V8h3l-5-5z"/>
+  <path d="M5 14v5h14v-5h2v7H3v-7h2z"/>
+</svg> Compartir 🎁<img src="svg/icono_compartir.svg" alt="Icono de compartir"></button>
             </div>
         </div>
     </div>
@@ -885,61 +859,56 @@
                 grupoManija.position.set(0.3, 0, ancho/2 - 1);
                 grupo.add(grupoManija);
 
+                // --- AgarraderaManija ARQUEADA CON BARRIGA ---
                 const grupoAgarraderaManijaNueva = new THREE.Group();
-                // --- 1. MATERIAL METÁLICO (con un poco más de brillo para resaltar las curvas) ---
-                const matAgarradera = new THREE.MeshStandardMaterial({
-                    color: 0xEEEEEE, // Un gris más claro para que brille más
-                    metalness: 1.0,  // Metal completo
-                    roughness: 0.1   // Muy pulido
-                });
 
-                // --- 2. DEFINICIÓN DE PUNTOS PARA UNA GEOMETRÍA ESCULTURAL ---
-                // Añadimos puntos extra (2b, 2c, 5b, 6b) para definir curvas perfectas
+                // Curva central de la AgarraderaManija
                 const puntosCurva = [
-                    new THREE.Vector3(0, 0.8, 0),         // 1. Inicio Superior (Anclado)
-                    new THREE.Vector3(0.15, 0.75, 0),     // 2. Salida suave desde arriba
-                    new THREE.Vector3(0.40, 0.65, 0),     // 2b. PUNTO EXTRA: Redondea la parte superior de la barriga
-                    new THREE.Vector3(0.50, 0.45, 0),     // 2c. PUNTO EXTRA: El cénit de la barriga (bien definida)
-                    new THREE.Vector3(0.40, 0.25, 0),     // 2d. PUNTO EXTRA: Redondea la parte inferior de la barriga
-                    new THREE.Vector3(0.15, -0.1, 0),     // 3. Transición bajando
-                    new THREE.Vector3(0, -0.45, 0),       // 4. UNIÓN BAJA (Anclado)
-                    new THREE.Vector3(0.04, -0.55, 0),    // 5. Salida suave desde la unión
-                    new THREE.Vector3(0.1, -0.65, 0),    // 5b. PUNTO EXTRA: Define la curva hacia afuera
-                    new THREE.Vector3(0.13, -0.7, 0),    // 6. El punto más salido de la curva final
-                    new THREE.Vector3(0.25, -0.88, 0)     // 6b. FIN: Curva sutil hacia adentro, sin tocar la puerta
+                    new THREE.Vector3(-0.6, 0, 0),   // extremo izquierdo
+                    new THREE.Vector3(-0.3, 0.1, 0), // sube ligeramente
+                    new THREE.Vector3(0, 0.2, 0),    // centro más alto (barriga)
+                    new THREE.Vector3(0.3, 0.1, 0),  // baja
+                    new THREE.Vector3(0.6, 0, 0)     // extremo derecho
                 ];
+                const curvaAgarraderaManija = new THREE.CatmullRomCurve3(puntosCurva);
 
-                // --- 3. CREACIÓN DE LA CURVA (con suavizado extra) ---
-                const curvaAgarradera = new THREE.CatmullRomCurve3(puntosCurva);
-                curvaAgarradera.tension = 0.4; // Bajamos un poco la tensión para curvas más orgánicas
+                // Geometría tipo tubo para la AgarraderaManija
+                const radio = 0.05;             // grosor de la AgarraderaManija
+                const tubularSegments = 50;     // resolución a lo largo de la curva
+                const radialSegments = 16;      // resolución de la sección circular
+                const geoAgarraderaManija = new THREE.TubeGeometry(curvaAgarraderaManija, tubularSegments, radio, radialSegments, false);
 
-                // Geometría de tubo (Aumentamos segmentos para que la curva sea perfecta)
-                const tubularSegments = 200; // Más segmentos para curvas ultra suaves
-                const radioTubo = 0.05;      // Grosor constante
-                const geoAgarradera = new THREE.TubeGeometry(curvaAgarradera, tubularSegments, radioTubo, 16, false);
-                const mallaAgarradera = new THREE.Mesh(geoAgarradera, matAgarradera);
-                mallaAgarradera.castShadow = true;
-                grupoAgarraderaManijaNueva.add(mallaAgarradera);
+                // Material metálico
+                const matAgarraderaAgarraderaManija = new THREE.MeshStandardMaterial({color: 0xFFFFFF, metalness: 0.8, roughness: 0.2});
 
-                // --- 4. SOPORTES ---
-                const geoSoporte = new THREE.CylinderGeometry(0.05, 0.07, 0.06, 16);
+                // Malla principal de la AgarraderaManija
+                const AgarraderaManija = new THREE.Mesh(geoAgarraderaManija, matAgarraderaAgarraderaManija);
+                AgarraderaManija.castShadow = true;
+                AgarraderaManija.receiveShadow = true;
+                grupoAgarraderaManijaNueva.add(AgarraderaManija);
 
-                // Soporte Superior
-                const soporteSup = new THREE.Mesh(geoSoporte, matAgarradera);
-                soporteSup.position.set(0, 0.8, 0);
-                soporteSup.rotateZ(Math.PI / 2);
+                // Soportes de la AgarraderaManija en los extremos
+                const geoSoporte = new THREE.CylinderGeometry(0.05, 0.05, 0.1, 16);
 
-                // Soporte Inferior (Ajustado a la unión -0.45)
-                const soporteBajo = new THREE.Mesh(geoSoporte, matAgarradera);
-                soporteBajo.position.set(0, -0.45, 0); 
-                soporteBajo.rotateZ(Math.PI / 2);
+                const soporteIzq = new THREE.Mesh(geoSoporte, matAgarraderaAgarraderaManija);
+                soporteIzq.position.set(-0.6, 0, 0);
+                soporteIzq.rotateZ(Math.PI / 2);
+                soporteIzq.castShadow = true;
+                soporteIzq.receiveShadow = true;
 
-                grupoAgarraderaManijaNueva.add(soporteSup, soporteBajo);
+                const soporteDer = new THREE.Mesh(geoSoporte, matAgarraderaAgarraderaManija);
+                soporteDer.position.set(0.6, 0, 0);
+                soporteDer.rotateZ(Math.PI / 2);
+                soporteDer.castShadow = true;
+                soporteDer.receiveShadow = true;
 
-                // --- 5. POSICIÓN FINAL ---
-                grupoAgarraderaManijaNueva.position.set(0, -1, -2.5);
+                grupoAgarraderaManijaNueva.add(soporteIzq, soporteDer);
 
-                // Agregar al grupo de la puerta
+                // Posicionar la AgarraderaManija en la puerta (ajusta según tu puerta)
+                grupoAgarraderaManijaNueva.position.set(0, -0.8, -2.5); // X, Y, Z
+                grupoAgarraderaManijaNueva.rotateZ(-Math.PI / 2);              // Para que apunte hacia afuera
+
+                // Agregar al grupo principal de la puerta
                 grupo.add(grupoAgarraderaManijaNueva);
             }
 
@@ -1284,6 +1253,9 @@
 
             // 3. Mensaje secundario: Ya puedes moverte
             mensajeEstado.textContent = "Ya puedes moverte, estamos haciendo unos retoques finales a la foto...";
+
+            // Dar un frame para que se vea el mensaje antes de procesar IA
+            await new Promise(r => setTimeout(r, 1300));
 
             // --- APLICAR IA (Recorte de Fondo) ---
             if (segmentador) {

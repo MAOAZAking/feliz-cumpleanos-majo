@@ -25,24 +25,7 @@
         
         /* Ajustes para móviles */
         @media (max-width: 600px) {
-            .btn {
-                padding: 15px 30px;
-                font-size: 20px;
-                width: 80%;
-                border: solid 3px black;
-                /* Animación de palpitar */
-                animation: palpitar 1s infinite;
-                }
-
-                /* Keyframes de la animación */
-                @keyframes palpitar {
-                0%, 100% {
-                    transform: scale(1);
-                }
-                50% {
-                    transform: scale(1.1); /* Aumenta tamaño al 110% */
-                }
-                }
+            .btn { padding: 15px 30px; font-size: 20px; width: 80%; }
             #interfaz-foto { width: 70vw; height: 40vh; left: 15vw; }
             .btn-icon { width: 70px; height: 70px; }
             #cargando { font-size: 18px; text-align: center; padding: 20px; }
@@ -71,7 +54,7 @@
             pointer-events: auto;
             background: rgba(255, 105, 180, 0.9);
             color: white;
-            border: solid 3px black;
+            border: none;
             padding: 12px 24px;
             font-size: 18px;
             border-radius: 30px;
@@ -80,19 +63,6 @@
             transition: transform 0.2s, background 0.2s;
             text-transform: uppercase;
             font-weight: bold;
-            /* Animación de palpitar */
-            animation: palpitar 1s infinite;
-            }
-
-            /* Keyframes de la animación */
-            @keyframes palpitar {
-            0%, 100% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.1); /* Aumenta tamaño al 110% */
-            }
-
         }
         .btn:active { transform: scale(0.95); }
         .btn-icon { font-size: 24px; padding: 15px; border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;}
@@ -212,7 +182,11 @@
             <button id="boton-modo-foto" class="btn">📷 Modo Foto </button>
             <div id="controles-resultado">
                 <button id="boton-repetir" class="btn">Repetir Foto</button>
-                <button id="boton-compartir" class="btn"><img src="svg/icono_compartir.svg" alt="Icono de compartir"> Compartir 🎁</button>
+                <button id="boton-compartir" class="btn"><!-- Icono compartir blanco pequeño -->
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="white" viewBox="0 0 24 24">
+  <path d="M12 3l-5 5h3v6h4V8h3l-5-5z"/>
+  <path d="M5 14v5h14v-5h2v7H3v-7h2z"/>
+</svg> Compartir </button>
             </div>
         </div>
     </div>
@@ -822,11 +796,10 @@
             } else if (tipo === 'puerta') {
                 // Puerta: Panel de madera con patrón
                 const panelPuerta = new THREE.Group();
-                const numColumnas = 11;
+                const numColumnas = 5;
                 const anchoColumna = (ancho - 0.5) / numColumnas;
                 const altoPuerta = alto - 0.5;
-                const matPuerta = new THREE.MeshStandardMaterial({color: 0xFFFCF2}); // Color principal
-                const matPuertaHundida = new THREE.MeshStandardMaterial({color: 0xE6E3DA}); // Color más oscuro para ranuras
+                const matPuerta = new THREE.MeshStandardMaterial({color: 0x8B4513});
 
                 for (let i = 0; i < numColumnas; i++) {
                     // Las columnas pares (0, 2, 4) sobresalen, las impares (1, 3) están hundidas.
@@ -836,13 +809,8 @@
                     const posXColumna = esSalida ? 0 : -0.05;
 
                     const geoColumna = new THREE.BoxGeometry(profundidadColumna, altoPuerta, anchoColumna);
-                    const materialColumna = esSalida ? matPuerta : matPuertaHundida;
-                    const columna = new THREE.Mesh(geoColumna, materialColumna);
+                    const columna = new THREE.Mesh(geoColumna, matPuerta);
 
-                    // Habilitar que cada parte de la puerta proyecte y reciba sombras
-                    columna.castShadow = true;
-                    columna.receiveShadow = true;
-                    
                     columna.position.x = posXColumna;
                     columna.position.z = -((ancho - 0.5) / 2) + (i * anchoColumna) + (anchoColumna / 2);
                     
@@ -884,63 +852,6 @@
 
                 grupoManija.position.set(0.3, 0, ancho/2 - 1);
                 grupo.add(grupoManija);
-
-                const grupoAgarraderaManijaNueva = new THREE.Group();
-                // --- 1. MATERIAL METÁLICO (con un poco más de brillo para resaltar las curvas) ---
-                const matAgarradera = new THREE.MeshStandardMaterial({
-                    color: 0xEEEEEE, // Un gris más claro para que brille más
-                    metalness: 1.0,  // Metal completo
-                    roughness: 0.1   // Muy pulido
-                });
-
-                // --- 2. DEFINICIÓN DE PUNTOS PARA UNA GEOMETRÍA ESCULTURAL ---
-                // Añadimos puntos extra (2b, 2c, 5b, 6b) para definir curvas perfectas
-                const puntosCurva = [
-                    new THREE.Vector3(0, 0.8, 0),         // 1. Inicio Superior (Anclado)
-                    new THREE.Vector3(0.15, 0.75, 0),     // 2. Salida suave desde arriba
-                    new THREE.Vector3(0.40, 0.65, 0),     // 2b. PUNTO EXTRA: Redondea la parte superior de la barriga
-                    new THREE.Vector3(0.50, 0.45, 0),     // 2c. PUNTO EXTRA: El cénit de la barriga (bien definida)
-                    new THREE.Vector3(0.40, 0.25, 0),     // 2d. PUNTO EXTRA: Redondea la parte inferior de la barriga
-                    new THREE.Vector3(0.15, -0.1, 0),     // 3. Transición bajando
-                    new THREE.Vector3(0, -0.45, 0),       // 4. UNIÓN BAJA (Anclado)
-                    new THREE.Vector3(0.04, -0.55, 0),    // 5. Salida suave desde la unión
-                    new THREE.Vector3(0.1, -0.65, 0),    // 5b. PUNTO EXTRA: Define la curva hacia afuera
-                    new THREE.Vector3(0.13, -0.7, 0),    // 6. El punto más salido de la curva final
-                    new THREE.Vector3(0.25, -0.88, 0)     // 6b. FIN: Curva sutil hacia adentro, sin tocar la puerta
-                ];
-
-                // --- 3. CREACIÓN DE LA CURVA (con suavizado extra) ---
-                const curvaAgarradera = new THREE.CatmullRomCurve3(puntosCurva);
-                curvaAgarradera.tension = 0.4; // Bajamos un poco la tensión para curvas más orgánicas
-
-                // Geometría de tubo (Aumentamos segmentos para que la curva sea perfecta)
-                const tubularSegments = 200; // Más segmentos para curvas ultra suaves
-                const radioTubo = 0.05;      // Grosor constante
-                const geoAgarradera = new THREE.TubeGeometry(curvaAgarradera, tubularSegments, radioTubo, 16, false);
-                const mallaAgarradera = new THREE.Mesh(geoAgarradera, matAgarradera);
-                mallaAgarradera.castShadow = true;
-                grupoAgarraderaManijaNueva.add(mallaAgarradera);
-
-                // --- 4. SOPORTES ---
-                const geoSoporte = new THREE.CylinderGeometry(0.05, 0.07, 0.06, 16);
-
-                // Soporte Superior
-                const soporteSup = new THREE.Mesh(geoSoporte, matAgarradera);
-                soporteSup.position.set(0, 0.8, 0);
-                soporteSup.rotateZ(Math.PI / 2);
-
-                // Soporte Inferior (Ajustado a la unión -0.45)
-                const soporteBajo = new THREE.Mesh(geoSoporte, matAgarradera);
-                soporteBajo.position.set(0, -0.45, 0); 
-                soporteBajo.rotateZ(Math.PI / 2);
-
-                grupoAgarraderaManijaNueva.add(soporteSup, soporteBajo);
-
-                // --- 5. POSICIÓN FINAL ---
-                grupoAgarraderaManijaNueva.position.set(0, -1, -2.5);
-
-                // Agregar al grupo de la puerta
-                grupo.add(grupoAgarraderaManijaNueva);
             }
 
             // Posicionar en la pared izquierda (X ~ -19.8 para que sobresalga un poco)
@@ -998,12 +909,12 @@
 
             // Bombilla
             const geoBombilla = new THREE.SphereGeometry(0.5, 16, 16);
-            const matBombilla = new THREE.MeshBasicMaterial({ color: 0xFFFFFF }); // Blanco brillante
+            const matBombilla = new THREE.MeshBasicMaterial({ color: 0xFFFFAA }); // Amarillo brillante, autoiluminado
             const bombilla = new THREE.Mesh(geoBombilla, matBombilla);
             grupoLuz.add(bombilla);
 
             // Luz PointLight que emana del bombillo
-            const luz = new THREE.PointLight(0xFFFFFF, 1.5, 30); // Luz blanca, más intensa y con más alcance
+            const luz = new THREE.PointLight(0xFFFFAA, 0.8, 25);
             luz.castShadow = true;
             grupoLuz.add(luz);
 
@@ -1254,12 +1165,17 @@
             // 1. Mensaje inicial: No moverse
             mensajeEstado.textContent = "Trata de no moverte, estamos capturando este momento inolvidable...";
             mensajeEstado.style.display = 'block';
-            botonTomarFoto.textContent = "📸";
             
-            // Esperamos un frame para que se renderice
-            await new Promise(r => setTimeout(r, 1300));
+            
+            // Pequeña pausa para asegurar que el usuario lea y la UI se actualice antes de congelar
+            await new Promise(r => setTimeout(r, 100));
+            mensajeEstado.textContent = "Ya puedes moverte, estamos haciendo unos retoques finales a la foto...";
 
-            // --- Captura del video en canvas ---
+            botonTomarFoto.textContent = "📸";
+            // Colocar emoji de camara con flash cuando se de clic en el boton
+
+            // CAPTURA DE LA FOTO
+            
             const escalaCaptura = 10; // Aumentamos la resolución para más nitidez
 
             // Crear canvas temporal para capturar el frame del video
@@ -1279,11 +1195,9 @@
             ctx.drawImage(elementoVideo, 0, 0, canvasTemporal.width, canvasTemporal.height); // Dibujar a la nueva resolución
             ctx.restore(); // Restaurar para que las siguientes operaciones no estén invertidas
 
-            // Pausar video para congelar la imagen visual
+            // Pausar el video para "congelar" la imagen en la UI
             elementoVideo.pause();
-
-            // 3. Mensaje secundario: Ya puedes moverte
-            mensajeEstado.textContent = "Ya puedes moverte, estamos haciendo unos retoques finales a la foto...";
+            // 2. Mensaje secundario: Procesando (Ya se capturó el frame, ahora es seguro moverse)
 
             // --- APLICAR IA (Recorte de Fondo) ---
             if (segmentador) {
