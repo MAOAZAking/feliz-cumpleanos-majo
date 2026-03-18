@@ -101,8 +101,29 @@
         .botonRegalo{
             position:absolute;
             bottom:20px;
-            left: 45%;
             pointer-events:auto;
+        }
+
+        .botonRegaloAnterior{
+            background: rgb(0, 91, 227);
+            color: white;
+            left: 20px;
+        }
+
+        .botonRegaloSiguiente{
+            background: rgb(26, 171, 0);
+            color: white;
+            right: 20px;
+        }
+
+        .botonCerrarRegalo{
+            left: 45%;
+            background: rgb(255, 0, 0);
+            color: white
+        }
+
+        .botonAbrirRegalo{
+            left: 45%;
             background:rgba(222, 131, 255, 0.9);
         }
         
@@ -229,14 +250,14 @@
 
     <!-- UI Secreta de Regalos -->
     <div id="gift-ui" style="display: none;">
-        <button id="btn-close-gift" class="btn" style="position:absolute; top:20px; right:20px; pointer-events:auto; background:rgba(200,50,50,0.9);">✕</button>
+        <button id="btn-close-gift" class="btn botonRegalo botonCerrarRegalo">Cerrar regalo ✕</button>
         <div id="letter-overlay">
             <p>Hola, feliz cumpleaños Majo, Dios te bendiga hoy y siempre</p>
         </div>
         <div class="gift-controls">
-            <button id="btn-prev-gift" class="btn" style="display:none;">⬅ Anterior</button>
-            <button id="btn-action-gift" class="btn botonRegalo" style="display:none;">Abrir 🎁</button>
-            <button id="btn-next-gift" class="btn" style="display:none;">Siguiente ➡</button>
+            <button id="btn-prev-gift" class="btn botonRegalo botonRegaloAnterior" style="display:none;">⬅ Anterior</button>
+            <button id="btn-action-gift" class="btn botonRegalo botonAbrirRegalo" style="display:none;">Abrir 🎁</button>
+            <button id="btn-next-gift" class="btn botonRegalo botonRegaloSiguiente" style="display:none;">Siguiente ➡</button>
         </div>
     </div>
 
@@ -1372,7 +1393,7 @@ const smokeTexture = crearTexturaHumo();
         // Regalo Interno
         cargadorRegalos.load('modelos_3d/carl_fredricksen.glb', function(gltf) {
             innerGiftModel = gltf.scene;
-            innerGiftModel.scale.set(2, 2, 2);
+            innerGiftModel.scale.set(configModelo.escala, configModelo.escala, configModelo.escala);
             innerGiftModel.position.set(0, 1.5, 0); // Dentro de la caja
             innerGiftModel.visible = false; // Oculto al inicio
             giftGroup.add(innerGiftModel);
@@ -1391,8 +1412,8 @@ const smokeTexture = crearTexturaHumo();
         const letterGeo = new THREE.PlaneGeometry(2, 2);
         const letterMat = new THREE.MeshBasicMaterial({ map: letterTex, side: THREE.DoubleSide });
         letterMesh = new THREE.Mesh(letterGeo, letterMat);
-        letterMesh.position.set(0, 4.1, 1.2); // Encima de la rosa
-        letterMesh.rotation.x = -Math.PI / 5; // Inclinada para leerse mejor desde arriba
+        letterMesh.position.set(0, 4.2, 1.2); // Encima de la rosa
+        letterMesh.rotation.x = -Math.PI / 4.3; // Inclinada para leerse mejor desde arriba
         giftGroup.add(letterMesh);
         checkGiftsLoaded();
 
