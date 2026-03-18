@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:,">
     <title>Feliz Cumple Majo - 22</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #333; font-family: 'Arial', sans-serif; }
@@ -188,7 +189,8 @@
         {
             "imports": {
                 "three": "./js/three.module.js",
-                "three/addons/": "./js/examples/jsm/"
+                "three/addons/": "./js/examples/jsm/",
+                "three/addons/loaders/GLTFLoader.js": "https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js"
             }
         }
     </script>
@@ -214,6 +216,19 @@
                 <button id="boton-repetir" class="btn">Repetir Foto</button>
                 <button id="boton-compartir" class="btn"><img src="svg/icono_compartir.svg" alt="Icono de compartir"> Compartir 🎁</button>
             </div>
+        </div>
+    </div>
+
+    <!-- UI Secreta de Regalos -->
+    <div id="gift-ui" style="display: none;">
+        <button id="btn-close-gift" class="btn" style="position:absolute; top:20px; right:20px; pointer-events:auto; background:rgba(200,50,50,0.9);">✕</button>
+        <div id="letter-overlay">
+            <p>Hola, feliz cumpleaños Majo, Dios te bendiga hoy y siempre</p>
+        </div>
+        <div class="gift-controls">
+            <button id="btn-prev-gift" class="btn" style="display:none;">⬅ Anterior</button>
+            <button id="btn-action-gift" class="btn" style="display:none;">Abrir 🎁</button>
+            <button id="btn-next-gift" class="btn" style="display:none;">Siguiente ➡</button>
         </div>
     </div>
 
@@ -284,6 +299,9 @@
         escena.add(luzFocal.target);
 
         // Luz de las velas (se crea con cada vela)
+        const candleLights = []; // Array para guardar las luces y apagarlas
+        const flameMeshes = [];  // Array para guardar las llamas y ocultarlas
+        let tapCount = 0; // Contador de toques en el pastel
 
         // --- Materiales ---
         // Colores en Hexadecimal: 0xRRGGBB (Ej: 0xFF0000 es Rojo)
@@ -1056,6 +1074,12 @@
                 const luzVela = new THREE.PointLight(0xffaa33, 0.7, 4, 2);
                 luzVela.position.y = 0.4;
                 grupoLlama.add(luzVela);
+                
+                candleLights.push(luzVela);
+                // flameMeshes.push(grupoLlama); // ANTES: Guardaba todo el grupo (incluida la mecha)
+                // AHORA: Guardamos solo las partes de fuego para ocultar solo eso
+                flameMeshes.push(llamaExterior);
+                flameMeshes.push(llamaInterior);
 
                 grupoLlama.position.set(x, 3.0, -0.45);
                 grupoPastel.add(grupoLlama);
@@ -1166,6 +1190,178 @@
             verificarListo();
         });
 
+        // --- SISTEMA DE HUMO (Para cuando se apagan las velas) ---
+        const smokeParticles = [];
+        // --- CORRECCIÓN TEXTURA DE HUMO ---
+// Función para crear la textura de humo sin archivos externos
+function crearTexturaHumo() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 32;
+    canvas.height = 32;
+    const ctx = canvas.getContext('2d');
+    const grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+    grad.addColorStop(0, 'rgba(200, 200, 200, 1)'); // Gris en el centro
+    grad.addColorStop(1, 'rgba(200, 200, 200, 0)'); // Transparente en bordes
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 32, 32);
+    const texture = new THREE.CanvasTexture(canvas);
+    return texture;
+}
+
+// Usamos la función en lugar de cargar la imagen externa
+const smokeTexture = crearTexturaHumo();
+// const smokeTexture = new THREE.TextureLoader().load('...'); // Borra o comenta la línea vieja
+
+        const smokeMaterial = new THREE.MeshLambertMaterial({ 
+            color: 0xcccccc, 
+            map: smokeTexture, 
+            transparent: true, 
+            opacity: 0.4,
+            depthWrite: false
+        });
+        const smokeGeo = new THREE.PlaneGeometry(0.5, 0.5);
+
+        function spawnSmoke(x, y, z) {
+            for(let i=0; i<5; i++) {
+                const particle = new THREE.Mesh(smokeGeo, smokeMaterial);
+                particle.position.set(x + (Math.random()-0.5)*0.1, y, z + (Math.random()-0.5)*0.1);
+                particle.rotation.z = Math.random() * 2 * Math.PI;
+                particle.material.opacity = 0.6;
+                // Velocidad aleatoria hacia arriba
+                particle.userData = { 
+                    vy: 0.02 + Math.random() * 0.02, 
+                    vx: (Math.random()-0.5) * 0.01, 
+                    vz: (Math.random()-0.5) * 0.01 
+                };
+                grupoPastel.add(particle);
+                smokeParticles.push(particle);
+            }
+        }
+
+        function updateSmoke() {
+            for(let i = smokeParticles.length - 1; i >= 0; i--) {
+                let p = smokeParticles[i];
+                p.position.y += p.userData.vy;
+                p.position.x += p.userData.vx;
+                p.position.z += p.userData.vz;
+                p.rotation.z += 0.01;
+                p.material.opacity -= 0.01;
+                p.scale.multiplyScalar(1.02); // Expandir
+                if(p.material.opacity <= 0) {
+                    grupoPastel.remove(p);
+                    smokeParticles.splice(i, 1);
+                }
+            }
+        }
+
+        // --- SISTEMA DE REGALOS (GLB y Lógica) ---
+        const giftGroup = new THREE.Group();
+        giftGroup.visible = false;
+        // Posicionarlo sobre la mesa, reemplazando o tapando el pastel
+        giftGroup.position.set(0, -3.5, -5); // ACERCADO Y BAJADO: Más cerca de la cámara y sobre la mesa
+        escena.add(giftGroup);
+
+        let roseModel = null;
+        let innerGiftModel = null;
+        let giftBox = null;
+        let giftLid = null;
+        let ribbon = null;
+        let letterMesh = null;
+
+        // 1. Crear Caja de Regalo Procedural
+        function createProceduralGiftBox() {
+            const boxGroup = new THREE.Group();
+            
+            // Base
+            const boxGeo = new THREE.BoxGeometry(4, 3, 4);
+            const boxMat = new THREE.MeshStandardMaterial({ color: 0xFFD700, roughness: 0.3 }); // Dorado
+            const box = new THREE.Mesh(boxGeo, boxMat);
+            box.position.y = 1.5;
+            box.castShadow = true;
+            boxGroup.add(box);
+            giftBox = box;
+
+            // Tapa
+            const lidGeo = new THREE.BoxGeometry(4.2, 0.5, 4.2);
+            const lidMat = new THREE.MeshStandardMaterial({ color: 0xFFA500 }); // Naranja dorado
+            const lid = new THREE.Mesh(lidGeo, lidMat);
+            lid.position.y = 3.25;
+            lid.castShadow = true;
+            boxGroup.add(lid);
+            giftLid = lid;
+
+            // Moño (Cintas)
+            const ribMat = new THREE.MeshStandardMaterial({ color: 0xFF0000 });
+            const rib1 = new THREE.Mesh(new THREE.BoxGeometry(4.3, 0.6, 0.5), ribMat);
+            rib1.position.y = 3.25;
+            boxGroup.add(rib1);
+            const rib2 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 4.3), ribMat);
+            rib2.position.y = 3.25;
+            boxGroup.add(rib2);
+            ribbon = new THREE.Group();
+            ribbon.add(rib1, rib2);
+            boxGroup.add(ribbon);
+
+            return boxGroup;
+        }
+        const giftBoxModel = createProceduralGiftBox();
+        giftGroup.add(giftBoxModel);
+
+        // 2. Cargar Modelos GLB
+        const cargadorRegalos = new GLTFLoader();
+        
+        // Rosa
+        cargadorRegalos.load('modelos_3d/red_rose_1k.glb', function(gltf) {
+            roseModel = gltf.scene;
+            roseModel.scale.set(5, 5, 5); // Ajustar escala
+            roseModel.position.set(0, 3.5, 0); // Encima de la caja
+            roseModel.rotation.x = Math.PI / 2; // Acostada
+
+            // --- CORRECCIÓN DE MATERIALES ---
+            // Ajustamos el material para que no dependa de reflejos del entorno y se vea con las luces normales
+            roseModel.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                    if (child.material) {
+                        child.material.metalness = 0.0; // 0 = No metálico (plástico/orgánico), arregla el color negro
+                        child.material.roughness = 0.7; // Que tan mate es la superficie
+                    }
+                }
+            });
+
+            giftGroup.add(roseModel);
+            // Asegurarnos de que inicie oculto si la caja está cerrada
+            if(currentGiftStep === 0) roseModel.visible = false;
+        }, undefined, (e) => console.log("Rosa no encontrada (es normal si no está local)", e));
+
+        // Regalo Interno
+        cargadorRegalos.load('modelos_3d/carl_fredricksen.glb', function(gltf) {
+            innerGiftModel = gltf.scene;
+            innerGiftModel.scale.set(2, 2, 2);
+            innerGiftModel.position.set(0, 1.5, 0); // Dentro de la caja
+            innerGiftModel.visible = false; // Oculto al inicio
+            // giftGroup.add(innerGiftModel); // Ya no lo usamos aquí, usamos la rosa
+        }, undefined, (e) => console.log("Regalo interno no encontrado", e));
+
+        // 3. Carta (Mesh plano con textura)
+        // Usaremos un canvas para la textura de la carta "física" en el mundo 3D
+        const letterCanvas = document.createElement('canvas');
+        letterCanvas.width = 512; letterCanvas.height = 512;
+        const lCtx = letterCanvas.getContext('2d');
+        lCtx.fillStyle = '#fff0f5'; lCtx.fillRect(0,0,512,512);
+        lCtx.strokeStyle = 'gold'; lCtx.lineWidth = 10; lCtx.strokeRect(10,10,492,492);
+        lCtx.fillStyle = '#000'; lCtx.font = '40px Arial'; lCtx.textAlign = 'center';
+        lCtx.fillText("Para Majo", 256, 256);
+        
+        const letterTex = new THREE.CanvasTexture(letterCanvas);
+        const letterGeo = new THREE.PlaneGeometry(2, 2);
+        const letterMat = new THREE.MeshBasicMaterial({ map: letterTex, side: THREE.DoubleSide });
+        letterMesh = new THREE.Mesh(letterGeo, letterMat);
+        letterMesh.position.set(0, 4.0, 0); // Encima de la rosa
+        letterMesh.rotation.x = -Math.PI / 6; // Inclinada para leerse mejor desde arriba
+        giftGroup.add(letterMesh);
+
 
         // --- Lógica del Sistema ---
 
@@ -1179,6 +1375,15 @@
         const controlesResultado = document.getElementById('controles-resultado');
         const botonRepetir = document.getElementById('boton-repetir');
         const botonCompartir = document.getElementById('boton-compartir');
+        
+        // UI Regalos
+        const giftUI = document.getElementById('gift-ui');
+        const letterOverlay = document.getElementById('letter-overlay');
+        const btnNextGift = document.getElementById('btn-next-gift');
+        const btnPrevGift = document.getElementById('btn-prev-gift');
+        const btnActionGift = document.getElementById('btn-action-gift');
+        const btnCloseGift = document.getElementById('btn-close-gift');
+
         let flujoVideo = null; // Guardará el stream de la cámara
         let segmentador = null; // Variable para el modelo de IA
 
@@ -1217,9 +1422,10 @@
         botonModoFoto.addEventListener('click', async () => {
             try {
                 // Solo pedimos acceso si no tenemos un stream activo
+                // Pedi permisos de AUDIO también para la función secreta
                 if (!flujoVideo) {
-                    flujoVideo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-                    elementoVideo.srcObject = flujoVideo;
+                    flujoVideo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true });
+                    elementoVideo.srcObject = flujoVideo; // El video ignorará la pista de audio
                 }
                 elementoVideo.play(); // Aseguramos que se reproduzca si estaba pausado
                 interfazFoto.style.display = 'block';
@@ -1227,10 +1433,229 @@
                 
                 // Mover cámara 3D para encuadrar el pastel y el espacio vacío de la pared
                 moverCamaraAPosicionPosado();
+
+                // Reiniciar estado de soplido
+                isListeningForBlow = false;
+                
+                // Iniciar detección de soplido
+                iniciarEscuchaSecreta();
+
             } catch (err) {
                 alert("No se pudo acceder a la cámara: " + err);
             }
         });
+
+        // --- LÓGICA SECRETA (DOBLE TAP + SOPLIDO) ---
+        let audioContext, analyser, microphone;
+        let isListeningForBlow = false;
+        let lastTapTime = 0;
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        function iniciarEscuchaSecreta() {
+            if (flujoVideo) {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    analyser = audioContext.createAnalyser();
+                    analyser.fftSize = 256;
+                    detectarSoplidoLoop();
+                }
+
+                // Reconectar siempre el micrófono al nuevo flujo de video (importante para reintentos)
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+                // Si ya había un micrófono conectado, desconectarlo para evitar duplicados/errores
+                if (microphone) {
+                    try { microphone.disconnect(); } catch(e){}
+                }
+                microphone = audioContext.createMediaStreamSource(flujoVideo);
+                microphone.connect(analyser);
+            }
+        }
+
+        function detectarSoplidoLoop() {
+            if (!isListeningForBlow) {
+                requestAnimationFrame(detectarSoplidoLoop);
+                return;
+            }
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            analyser.getByteFrequencyData(dataArray);
+
+            // Heurística simple: Soplido genera ruido blanco (energía en todas las frecuencias) y volumen alto
+            let sum = 0;
+            for(let i = 0; i < bufferLength; i++) sum += dataArray[i];
+            const average = sum / bufferLength;
+
+            // Umbral de volumen BAJADO para facilitar detección (antes 45)
+            if (average > 10) {
+                apagarVelasYActivarRegalo();
+            }
+
+            requestAnimationFrame(detectarSoplidoLoop);
+        }
+
+        // Evento de doble tap en el pastel
+        renderizador.domElement.addEventListener('pointerdown', (event) => {
+            // Solo funciona si estamos en modo foto (cámara atrás del pastel) y las velas están prendidas
+            // La cámara está en Z negativa mirando al positivo. Pastel en (0, -4, -12).
+            // isListeningForBlow se activa temporalmente tras el doble tap
+            
+            // Verificar si estamos en "Modo Foto" (chequeando si la UI de foto está visible es una forma simple)
+            if (interfazFoto.style.display === 'none') return;
+
+            const now = Date.now();
+            const timeDiff = now - lastTapTime;
+            
+            if (timeDiff < 400 && timeDiff > 0) {
+                // Posible doble tap, verificar raycast
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                raycaster.setFromCamera(mouse, camara);
+                
+                // 1. Lógica Pastel (Solo si interfaz foto está activa)
+                if (interfazFoto.style.display !== 'none') {
+                    // Intersectar con el grupo del pastel
+                    const intersects = raycaster.intersectObjects(grupoPastel.children, true);
+                    if (intersects.length > 0) {
+                        // ¡Doble tap en el pastel confirmado!
+                        console.log("Doble tap en el pastel confirmado!");
+                        isListeningForBlow = true;
+                    }
+                }
+                // 2. Lógica Regalo (Solo si el regalo está visible y cerrado)
+                else if (giftGroup.visible && currentGiftStep === 0) {
+                    const intersects = raycaster.intersectObjects(giftGroup.children, true);
+                    if (intersects.length > 0) {
+                        abrirCajaRegalo();
+                        console.log("Doble tap en el regalo confirmado!");
+                    }
+                }
+            }
+            lastTapTime = now;
+        });
+
+        function apagarVelasYActivarRegalo() {
+            if (!isListeningForBlow) return;
+            isListeningForBlow = false; // Desactivar para no disparar múltiple
+
+            // 1. Apagar luces y ocultar llamas
+            candleLights.forEach(l => l.intensity = 0);
+            flameMeshes.forEach(m => m.visible = false);
+
+            // 2. Humo
+            spawnSmoke(-0.35, 3.5, -0.45); // Vela 1
+            spawnSmoke(0.2, 3.5, -0.45);   // Vela 2
+
+            // 3. Esperar 3 segundos y cambiar vista
+            setTimeout(() => {
+                // Ocultar UI de Foto
+                botonCerrarCamara.click();
+                
+                // Ocultar controles principales y pastel
+                controlesPrincipales.style.display = 'none';
+                grupoPastel.visible = false; 
+                
+                // Mostrar Grupo de Regalo
+                giftGroup.visible = true;
+
+                // Mover cámara a vista de regalo (Desde arriba y cerca)
+                animarCamara(new THREE.Vector3(0, 8, 8), new THREE.Vector3(0, -2, -5));
+
+                // Iniciar Secuencia de Regalos
+                iniciarSecuenciaRegalos();
+            }, 3000);
+        }
+
+        // --- MAQUINA DE ESTADOS DE REGALOS ---
+        let currentGiftStep = 0; // 0: Caja Cerrada, 1: Regalos Abiertos
+
+        function iniciarSecuenciaRegalos() {
+            giftUI.style.display = 'block';
+            mostrarRegalo(0);
+        }
+
+        function mostrarRegalo(step) {
+            currentGiftStep = step;
+            
+            // 1. Ocultar TODOS los modelos de regalo primero para evitar superposiciones
+            if (letterMesh) letterMesh.visible = false;
+            if (roseModel) roseModel.visible = false;
+            if (innerGiftModel) innerGiftModel.visible = false;
+
+            // 2. Resetear visibilidad UI y controles
+            letterOverlay.style.display = 'none';
+            btnNextGift.style.display = 'none';
+            btnPrevGift.style.display = 'none';
+            controles.autoRotate = false;
+
+            // 3. Activar el modelo y UI correspondiente al paso
+            if (step === 0) { // CAJA CERRADA
+                if (giftBoxModel) giftBoxModel.visible = true;
+                if (giftBox) giftBox.visible = true; // Asegurar que la caja base se ve
+                
+                // Resetear tapa
+                if (giftLid) {
+                    giftLid.position.set(0, 3.25, 0);
+                    giftLid.rotation.set(0, 0, 0);
+                }
+
+                btnActionGift.style.display = 'inline-block';
+                btnActionGift.textContent = "Abrir 🎁";
+
+            } else if (step === 1) { // CAJA ABIERTA (Ver Contenido)
+                if (letterMesh) letterMesh.visible = true;
+                if (roseModel) roseModel.visible = true;
+                
+                letterOverlay.style.display = 'flex';
+                btnActionGift.style.display = 'none'; // Ocultar botón abrir
+                
+                // Rotación suave para apreciar los regalos
+                controles.autoRotate = true;
+                controles.autoRotateSpeed = 2.0;
+            }
+        }
+
+        btnNextGift.addEventListener('click', () => mostrarRegalo(currentGiftStep + 1));
+        btnPrevGift.addEventListener('click', () => mostrarRegalo(currentGiftStep - 1));
+        
+        function abrirCajaRegalo() {
+            // Animación abrir caja
+            new TWEEN.Tween(giftLid.position).to({ y: 6, x: 2 }, 1000).start();
+            new TWEEN.Tween(giftLid.rotation).to({ z: Math.PI / 4 }, 1000).start();
+            
+            setTimeout(() => {
+                giftBox.visible = false;
+                // Pasar al paso 1: Mostrar contenido
+                mostrarRegalo(1);
+            }, 800);
+        }
+        
+        btnActionGift.addEventListener('click', abrirCajaRegalo);
+
+        btnCloseGift.addEventListener('click', () => {
+            giftUI.style.display = 'none';
+            giftGroup.visible = false;
+            
+            // Restaurar pastel y cámara original
+            grupoPastel.visible = true;
+            controlesPrincipales.style.display = 'block'; // RESTAURADO: Necesario para que al salir de la cámara se vea el botón
+            controles.autoRotate = false;
+
+            // Regresar al MODO FOTO automáticamente
+            botonModoFoto.click();
+
+            // Restaurar velas (visible)
+            setTimeout(() => {
+                candleLights.forEach(l => l.intensity = 0.7);
+                flameMeshes.forEach(m => m.visible = true);
+            }, 1000);
+        });
+
+        // Importar TWEEN para animaciones simples sin bloat
+        import TWEEN from 'https://unpkg.com/@tweenjs/tween.js@18.6.4/dist/tween.esm.js';
 
         // 2. Cerrar Modo Foto (X)
         botonCerrarCamara.addEventListener('click', () => {
@@ -1460,6 +1885,9 @@
             
             // Rotación suave del pastel si no se está interactuando
             // cakeGroup.rotation.y += 0.005; 
+            
+            updateSmoke(); // Actualizar partículas de humo
+            TWEEN.update(); // Actualizar interpolaciones
             
             controles.update();
             renderizador.render(escena, camara);
