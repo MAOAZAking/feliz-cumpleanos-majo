@@ -229,20 +229,20 @@
 
     <!-- UI Secreta de Regalos -->
     <div id="gift-ui" style="display: none;">
-        <button id="btn-close-gift" class="btn" style="position:absolute; top:20px; right:20px; pointer-events:auto; background:rgba(200,50,50,0.9);">✕</button>
+        <button id="btn-close-gift" class="btn botonRegalo" style="background: red;">Cerrar ❌</button>
         <div id="letter-overlay">
             <p>Hola, feliz cumpleaños Majo, Dios te bendiga hoy y siempre</p>
         </div>
         <div class="gift-controls">
             <button id="btn-prev-gift" class="btn" style="display:none;">⬅ Anterior</button>
-            <button id="btn-action-gift" class="btn botonRegalo" style="display:none;">Abrir 🎁</button>
+            <button id="btn-action-gift" class="btn botonRegalo">Abrir 🎁</button>
             <button id="btn-next-gift" class="btn" style="display:none;">Siguiente ➡</button>
         </div>
     </div>
 
     <!-- UI de Cámara -->
     <div id="interfaz-foto">
-        <video id="transmision-camara" autoplay playsinline muted></video>
+        <video id="transmision-camara" autoplay playsinline></video>
         <button class="cerrar-camara" id="boton-cerrar-camara">✕</button>
         <div class="camera-controls">
             <button id="boton-tomar-foto" class="btn btn-icon" style="background: white; color: black;">📷</button>
@@ -258,7 +258,6 @@
         import { FontLoader } from 'three/addons/loaders/FontLoader.js';
         import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-        import TWEEN from 'https://unpkg.com/@tweenjs/tween.js@18.6.4/dist/tween.esm.js';
 
         // --- CONFIGURACIÓN BOMBILLO ---
         // Modifica estos valores para mover el bombillo
@@ -1276,15 +1275,6 @@ const smokeTexture = crearTexturaHumo();
         let giftLid = null;
         let ribbon = null;
         let letterMesh = null;
-        let gifts = [];
-        let giftMode = 'none'; // 'none', 'pile', 'viewing'
-        let currentGiftIndex = 0;
-        const FOCUS_POSITION = new THREE.Vector3(0, 2, 0); // Position in front of camera (relative to giftGroup or world?)
-        // Let's use local position relative to giftGroup for simplicity if we can
-        // But giftGroup is at (0, -3.5, -5). Camera at (0, 8, 8) looking at (0, -2, -5).
-        // Let's find a world position for focus.
-        // Midpoint between camera and lookAt is (0, 3, 1.5).
-        const WORLD_FOCUS_POSITION = new THREE.Vector3(0, 3, 1.5); 
 
         // 1. Crear Caja de Regalo Procedural
         function createProceduralGiftBox() {
@@ -1299,32 +1289,26 @@ const smokeTexture = crearTexturaHumo();
             boxGroup.add(box);
             giftBox = box;
 
-            // Lid Group (contains lid mesh + ribbon parts on lid)
-            const lidGroup = new THREE.Group();
-            lidGroup.position.y = 3.25;
-            boxGroup.add(lidGroup);
-            giftLid = lidGroup;
-
-            // Tapa Mesh
+            // Tapa
             const lidGeo = new THREE.BoxGeometry(4.2, 0.5, 4.2);
             const lidMat = new THREE.MeshStandardMaterial({ color: 0xFFA500 }); // Naranja dorado
             const lid = new THREE.Mesh(lidGeo, lidMat);
+            lid.position.y = 3.25;
             lid.castShadow = true;
-            lidGroup.add(lid);
+            boxGroup.add(lid);
+            giftLid = lid;
 
-            // Moño (Cintas) - Add to Lid Group
+            // Moño (Cintas)
             const ribMat = new THREE.MeshStandardMaterial({ color: 0xFF0000 });
             const rib1 = new THREE.Mesh(new THREE.BoxGeometry(4.3, 0.6, 0.5), ribMat);
-            // rib1.position.y = 3.25; // Relative to lidGroup (0)
-            lidGroup.add(rib1);
+            rib1.position.y = 3.25;
+            boxGroup.add(rib1);
             const rib2 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 4.3), ribMat);
-            // rib2.position.y = 3.25; // Relative to lidGroup (0)
-            lidGroup.add(rib2);
-            
-            // ribbon group reference not strictly needed if children are in lidGroup, but kept for clarity
-            ribbon = new THREE.Group(); 
-            // We moved actual meshes to lidGroup, so ribbon ref might be unused or redefined.
-            // Let's just keep track that 'ribbon' parts are moving with 'giftLid' (lidGroup).
+            rib2.position.y = 3.25;
+            boxGroup.add(rib2);
+            ribbon = new THREE.Group();
+            ribbon.add(rib1, rib2);
+            boxGroup.add(ribbon);
 
             return boxGroup;
         }
@@ -1334,17 +1318,6 @@ const smokeTexture = crearTexturaHumo();
         // 2. Cargar Modelos GLB
         const cargadorRegalos = new GLTFLoader();
         
-        function checkGiftsLoaded() {
-            if (roseModel && letterMesh && giftBoxModel) {
-                // Initialize gifts array order: Rose -> Letter -> Box
-                gifts = [
-                    { id: 'rose', model: roseModel, originalState: { pos: roseModel.position.clone(), rot: roseModel.rotation.clone(), scale: roseModel.scale.clone() } },
-                    { id: 'letter', model: letterMesh, originalState: { pos: letterMesh.position.clone(), rot: letterMesh.rotation.clone(), scale: letterMesh.scale.clone() } },
-                    { id: 'box', model: giftBoxModel, originalState: { pos: giftBoxModel.position.clone(), rot: giftBoxModel.rotation.clone(), scale: giftBoxModel.scale.clone() } }
-                ];
-            }
-        }
-
         // Rosa
         cargadorRegalos.load('modelos_3d/rosa.glb', function(gltf) {
             roseModel = gltf.scene;
@@ -1354,19 +1327,21 @@ const smokeTexture = crearTexturaHumo();
             roseModel.rotation.z = Math.PI / 2.25; // Acostada de lado
 
             // --- CORRECCIÓN DE MATERIALES ---
+            // Ajustamos el material para que no dependa de reflejos del entorno y se vea con las luces normales
             roseModel.traverse((child) => {
                 if (child.isMesh) {
                     child.castShadow = true;
                     child.receiveShadow = true;
                     if (child.material) {
-                        child.material.metalness = 0.0; 
-                        child.material.roughness = 0.7; 
+                        child.material.metalness = 0.0; // 0 = No metálico (plástico/orgánico), arregla el color negro
+                        child.material.roughness = 0.7; // Que tan mate es la superficie
                     }
                 }
             });
 
             giftGroup.add(roseModel);
-            checkGiftsLoaded();
+            // Asegurarnos de que inicie oculto si la caja está cerrada
+            // if(currentGiftStep === 0) roseModel.visible = false;
         }, undefined, (e) => console.log("Rosa no encontrada (es normal si no está local)", e));
 
         // Regalo Interno
@@ -1375,10 +1350,11 @@ const smokeTexture = crearTexturaHumo();
             innerGiftModel.scale.set(2, 2, 2);
             innerGiftModel.position.set(0, 1.5, 0); // Dentro de la caja
             innerGiftModel.visible = false; // Oculto al inicio
-            giftGroup.add(innerGiftModel);
+            // giftGroup.add(innerGiftModel); // Ya no lo usamos aquí, usamos la rosa
         }, undefined, (e) => console.log("Regalo interno no encontrado", e));
 
         // 3. Carta (Mesh plano con textura)
+        // Usaremos un canvas para la textura de la carta "física" en el mundo 3D
         const letterCanvas = document.createElement('canvas');
         letterCanvas.width = 512; letterCanvas.height = 512;
         const lCtx = letterCanvas.getContext('2d');
@@ -1391,10 +1367,10 @@ const smokeTexture = crearTexturaHumo();
         const letterGeo = new THREE.PlaneGeometry(2, 2);
         const letterMat = new THREE.MeshBasicMaterial({ map: letterTex, side: THREE.DoubleSide });
         letterMesh = new THREE.Mesh(letterGeo, letterMat);
-        letterMesh.position.set(0, 4.1, 1.2); // Encima de la rosa
-        letterMesh.rotation.x = -Math.PI / 5; // Inclinada para leerse mejor desde arriba
+        letterMesh.position.set(0, 3.57, 0); // Encima de la tapa de la caja
+        letterMesh.rotation.x = -Math.PI / 2; // Acostada
+        
         giftGroup.add(letterMesh);
-        checkGiftsLoaded();
 
 
         // --- Lógica del Sistema ---
@@ -1524,7 +1500,7 @@ const smokeTexture = crearTexturaHumo();
             const average = sum / bufferLength;
 
             // Umbral de volumen BAJADO para facilitar detección (antes 45)
-            if (average > 25) {
+            if (average > 10) {
                 apagarVelasYActivarRegalo();
             }
 
@@ -1538,16 +1514,19 @@ const smokeTexture = crearTexturaHumo();
             // isListeningForBlow se activa temporalmente tras el doble tap
             
             // Verificar si estamos en "Modo Foto" (chequeando si la UI de foto está visible es una forma simple)
-            
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-            raycaster.setFromCamera(mouse, camara);
+            if (interfazFoto.style.display === 'none') return;
 
             const now = Date.now();
             const timeDiff = now - lastTapTime;
-
-            if (interfazFoto.style.display !== 'none') {
-                if (timeDiff < 400 && timeDiff > 0) {
+            
+            if (timeDiff < 400 && timeDiff > 0) {
+                // Posible doble tap, verificar raycast
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                raycaster.setFromCamera(mouse, camara);
+                
+                // 1. Lógica Pastel (Solo si interfaz foto está activa)
+                if (interfazFoto.style.display !== 'none') {
                     // Intersectar con el grupo del pastel
                     const intersects = raycaster.intersectObjects(grupoPastel.children, true);
                     if (intersects.length > 0) {
@@ -1556,52 +1535,17 @@ const smokeTexture = crearTexturaHumo();
                         isListeningForBlow = true;
                     }
                 }
-            } 
-            else if (giftMode === 'pile') {
-                // Requerimos doble toque para evitar conflicto con la rotación 3D
-                if (timeDiff < 400 && timeDiff > 0) {
+                // 2. Lógica Regalo (Solo si el regalo está visible y cerrado)
+                else if (giftGroup.visible && currentGiftStep === 0) {
                     const intersects = raycaster.intersectObjects(giftGroup.children, true);
                     if (intersects.length > 0) {
-                        // Start viewing gifts
-                        enterGiftView(0); // Start with first gift (Rose)
+                        abrirCajaRegalo();
+                        console.log("Doble tap en el regalo confirmado!");
                     }
                 }
             }
             lastTapTime = now;
         });
-
-        // Add custom rotation controls for gift view
-        let isDraggingGift = false;
-        let previousMousePosition = { x: 0, y: 0 };
-
-        renderizador.domElement.addEventListener('pointerdown', (e) => {
-            if (giftMode === 'viewing') {
-                isDraggingGift = true;
-                previousMousePosition = { x: e.clientX, y: e.clientY };
-            }
-        });
-
-        renderizador.domElement.addEventListener('pointermove', (e) => {
-            if (giftMode === 'viewing' && isDraggingGift && gifts.length > 0) {
-                const deltaMove = {
-                    x: e.clientX - previousMousePosition.x,
-                    y: e.clientY - previousMousePosition.y
-                };
-
-                const currentGift = gifts[currentGiftIndex];
-                if (currentGift && currentGift.model) {
-                    currentGift.model.rotation.y += deltaMove.x * 0.01;
-                    currentGift.model.rotation.x += deltaMove.y * 0.01;
-                }
-
-                previousMousePosition = { x: e.clientX, y: e.clientY };
-            }
-        });
-
-        renderizador.domElement.addEventListener('pointerup', () => {
-            isDraggingGift = false;
-        });
-
 
         function apagarVelasYActivarRegalo() {
             if (!isListeningForBlow) return;
@@ -1626,147 +1570,111 @@ const smokeTexture = crearTexturaHumo();
                 
                 // Mostrar Grupo de Regalo
                 giftGroup.visible = true;
-                giftMode = 'pile';
 
                 // Mover cámara a vista de regalo (Desde arriba y cerca)
                 animarCamara(new THREE.Vector3(0, 8, 8), new THREE.Vector3(0, -2, -5));
 
-                // Iniciar Secuencia de Regalos (Actually show initial pile UI)
-                // iniciarSecuenciaRegalos(); // No auto start sequence, waiting for tap
-                giftUI.style.display = 'none'; // Ensure gift UI is hidden until interaction
+                // Iniciar Secuencia de Regalos
+                iniciarSecuenciaRegalos();
             }, 3000);
         }
 
-        // --- SISTEMA DE VISUALIZACIÓN DE REGALOS ---
+        // --- MAQUINA DE ESTADOS DE REGALOS ---
+        let currentGiftStep = 0; // 0: Caja Cerrada, 1: Regalos Abiertos
 
-        function enterGiftView(index) {
-            if (giftMode === 'viewing') return;
-            giftMode = 'viewing';
-            currentGiftIndex = index;
+        function iniciarSecuenciaRegalos() {
             giftUI.style.display = 'block';
-            btnCloseGift.style.display = 'inline-block'; // Close button top right
-            
-            // Disable camera controls
-            controles.enabled = false;
-
-            updateGiftView();
+            mostrarRegalo(0);
         }
 
-        function exitGiftView() {
-            giftMode = 'pile';
-            giftUI.style.display = 'none';
+        function mostrarRegalo(step) {
+            currentGiftStep = step;
             
-            // Re-enable camera controls
-            controles.enabled = true;
-
-            // Restore all gifts to original state
-            gifts.forEach(g => {
-                new TWEEN.Tween(g.model.position).to(g.originalState.pos, 1000).easing(TWEEN.Easing.Quadratic.Out).start();
-                new TWEEN.Tween(g.model.rotation).to({x: g.originalState.rot.x, y: g.originalState.rot.y, z: g.originalState.rot.z}, 1000).easing(TWEEN.Easing.Quadratic.Out).start();
-                new TWEEN.Tween(g.model.scale).to(g.originalState.scale, 1000).easing(TWEEN.Easing.Quadratic.Out).start();
-                g.model.visible = true;
-            });
-            
-            // If box was opened, reset it?
+            // 1. Ocultar TODOS los modelos de regalo primero para evitar superposiciones
+            if (letterMesh) letterMesh.visible = false;
+            if (roseModel) roseModel.visible = false;
             if (innerGiftModel) innerGiftModel.visible = false;
-            if (giftBoxModel) giftBoxModel.visible = true;
-            if (giftLid) {
-                giftLid.position.y = 3.25;
-                giftLid.rotation.z = 0;
-                giftLid.scale.set(1,1,1);
-                // Ensure opacity is reset if we faded it out (need material traversal if we did fade)
-            }
-            if (giftBox) {
-                giftBox.position.y = 1.5;
-                giftBox.scale.set(1,1,1);
-            }
-        }
 
-        function updateGiftView() {
-            const gift = gifts[currentGiftIndex];
-            
-            // Hide/Reset others
-            gifts.forEach((g, i) => {
-                if (i !== currentGiftIndex) {
-                    // Animate out or just hide
-                    new TWEEN.Tween(g.model.scale).to({x:0, y:0, z:0}, 500).start();
-                } else {
-                    g.model.visible = true;
-                    // Animate to focus (convert WORLD_FOCUS_POSITION to local if needed, but giftGroup is at (0, -3.5, -5))
-                    // Local pos = World Pos - Group Pos
-                    const localFocusPos = WORLD_FOCUS_POSITION.clone().sub(giftGroup.position);
-                    
-                    new TWEEN.Tween(g.model.position).to(localFocusPos, 1000).easing(TWEEN.Easing.Quadratic.Out).start();
-                    new TWEEN.Tween(g.model.rotation).to({x: 0, y: 0, z: 0}, 1000).easing(TWEEN.Easing.Quadratic.Out).start();
-                    new TWEEN.Tween(g.model.scale).to(g.originalState.scale, 1000).easing(TWEEN.Easing.Quadratic.Out).start();
-                }
-            });
+            // 2. Resetear visibilidad UI y controles
+            letterOverlay.style.display = 'none';
+            btnNextGift.style.display = 'none';
+            btnPrevGift.style.display = 'none';
+            controles.autoRotate = false;
 
-            // Update UI Buttons
-            btnPrevGift.style.display = currentGiftIndex > 0 ? 'inline-block' : 'none';
-            btnNextGift.style.display = currentGiftIndex < gifts.length - 1 ? 'inline-block' : 'none';
-            
-            // Open button only for last gift (Box)
-            if (currentGiftIndex === gifts.length - 1) {
+            // 3. Activar el modelo y UI correspondiente al paso
+            if (step === 0) { // CAJA CERRADA
+                if (giftBoxModel) giftBoxModel.visible = true;
+                if (giftBox) giftBox.visible = true; // Asegurar que la caja base se ve
                 btnActionGift.style.display = 'inline-block';
-                btnActionGift.textContent = "Abrir 🎁";
-            } else {
-                btnActionGift.style.display = 'none';
-            }
+                if (letterMesh) letterMesh.visible = true;
+                if (roseModel) roseModel.visible = true;
+                if (grupoPastel) grupoPastel.visible = true;
+                grupoPastel.position.set(0, -4.15, -12);
+                btnCloseGift.style.display = 'none'
+                //if (btnActionGift) btnActionGift.visible = true;
+                
+                // Resetear tapa
+                if (giftLid) {
+                    giftLid.position.set(0, 3.25, 0);
+                    giftLid.rotation.set(0, 0, 0);
+                }
 
-            // Letter overlay for letter gift?
-            if (gift.id === 'letter') {
-                // Could show text overlay here if desired, existing code had it
-                // letterOverlay.style.display = 'flex'; 
-            } else {
-                letterOverlay.style.display = 'none';
+            } else if (step === 1) { // CAJA ABIERTA (Ver Contenido)
+                if (letterMesh) letterMesh.visible = true;
+                if (roseModel) roseModel.visible = true;
+                
+                letterOverlay.style.display = 'flex';
+                btnCloseGift.style.display = 'inline-block';
+                btnNextGift.style.display = 'inline-block';
+                btnPrevGift.style.display = 'inline-block';
+                btnActionGift.style.display = 'none'; // Ocultar botón abrir
+                
+                // Rotación suave para apreciar los regalos
+                controles.autoRotate = true;
+                controles.autoRotateSpeed = 2.0;
             }
         }
 
-        btnNextGift.addEventListener('click', () => {
-            if (currentGiftIndex < gifts.length - 1) {
-                currentGiftIndex++;
-                updateGiftView();
-            }
-        });
-
-        btnPrevGift.addEventListener('click', () => {
-            if (currentGiftIndex > 0) {
-                currentGiftIndex--;
-                updateGiftView();
-            }
-        });
+        btnNextGift.addEventListener('click', () => mostrarRegalo(currentGiftStep + 1));
+        btnPrevGift.addEventListener('click', () => mostrarRegalo(currentGiftStep - 1));
         
         function abrirCajaRegalo() {
             // Animación abrir caja
-            // Lid goes up and scales down/disappears
-            new TWEEN.Tween(giftLid.position).to({ y: 8 }, 1000).start();
-            new TWEEN.Tween(giftLid.scale).to({ x: 0, y: 0, z: 0 }, 1000).start();
+            new TWEEN.Tween(giftLid.position).to({ y: 6, x: 2 }, 1000).start();
+            new TWEEN.Tween(giftLid.rotation).to({ z: Math.PI / 4 }, 1000).start();
             
-            // Box goes down and scales down/disappears
-            new TWEEN.Tween(giftBox.position).to({ y: -5 }, 1000).start();
-            new TWEEN.Tween(giftBox.scale).to({ x: 0, y: 0, z: 0 }, 1000).start();
-
-            if (innerGiftModel) {
-                innerGiftModel.visible = true;
-                // Animate inner gift slightly up?
-                new TWEEN.Tween(innerGiftModel.position).to({ y: 2 }, 1000).start();
-            }
-            
-            btnActionGift.style.display = 'none';
+            setTimeout(() => {
+                giftBox.visible = false;
+                // Pasar al paso 1: Mostrar contenido
+                mostrarRegalo(1);
+            }, 800);
         }
         
         btnActionGift.addEventListener('click', abrirCajaRegalo);
+        //btnActionGift.addEventListener('click', () =>abrirCajaRegalo);
+
 
         btnCloseGift.addEventListener('click', () => {
-            exitGiftView();
+            giftUI.style.display = 'none';
+            giftGroup.visible = false;
+            
+            // Restaurar pastel y cámara original
+            grupoPastel.visible = true;
+            controlesPrincipales.style.display = 'block'; // RESTAURADO: Necesario para que al salir de la cámara se vea el botón
+            controles.autoRotate = false;
+
+            // Regresar al MODO FOTO automáticamente
+            botonModoFoto.click();
+
+            // Restaurar velas (visible)
+            setTimeout(() => {
+                candleLights.forEach(l => l.intensity = 0.7);
+                flameMeshes.forEach(m => m.visible = true);
+            }, 1000);
         });
 
         // Importar TWEEN para animaciones simples sin bloat
-        // import TWEEN from 'https://unpkg.com/@tweenjs/tween.js@18.6.4/dist/tween.esm.js';
-
-        // --- LOGICA DE CLIC EN REGALOS (ZOOM) ---
-        // (Removed old click logic in favor of pointerdown handler above)
+        import TWEEN from 'https://unpkg.com/@tweenjs/tween.js@18.6.4/dist/tween.esm.js';
 
         // 2. Cerrar Modo Foto (X)
         botonCerrarCamara.addEventListener('click', () => {
