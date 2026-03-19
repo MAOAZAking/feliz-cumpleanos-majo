@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="data:,">
+    <link rel="icon" href="img/caja_de_regalo.png">
     <title>Feliz Cumple Majo - 22</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #333; font-family: 'Arial', sans-serif; }
@@ -31,6 +31,12 @@
                 font-size: 20px;
                 width: 80%;
                 border: solid 3px black;
+            }
+            /* Botón modo foto más grande en móvil */
+            #boton-modo-foto {
+                padding: 20px 40px !important;
+                font-size: 24px !important;
+                width: 90% !important;
                 /* Animación de palpitar */
                 animation: palpitar 1s infinite;
                 }
@@ -71,7 +77,7 @@
         .btn {
             pointer-events: auto;
             background: rgba(255, 105, 180, 0.9);
-            color: white;
+            color: white !important;
             border: solid 3px black;
             padding: 12px 24px;
             font-size: 18px;
@@ -96,37 +102,56 @@
 
         }
         .btn:active { transform: scale(0.95); }
-        .btn-icon { font-size: 24px; padding: 15px; border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;}
+        .btn-icon { font-size: 24px; padding: 0 0 5px 0; border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;}
 
-        .botonRegalo{
-            position:absolute;
-            bottom:20px;
-            pointer-events:auto;
+        /* Clase para quitar palpitación */
+        .btn-no-pulse {
+            animation: none !important;
         }
 
-        .botonRegaloAnterior{
-            background: rgb(0, 91, 227);
-            color: white;
-            left: 20px;
+        /* Estilo Neon para el botón principal */
+        .btn-neon {
+            background-color: rgba(0, 0, 0, 0.7) !important;
+            border: 2px solid #fff !important;
+            box-shadow: 0 0 10px #fff, 0 0 20px #ff00de, 0 0 40px #ff00de !important;
+            text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px #ff00de !important;
+            font-weight: bold;
+            transition: all 0.3s ease;
         }
 
-        .botonRegaloSiguiente{
-            background: rgb(26, 171, 0);
-            color: white;
-            right: 20px;
+        /* Botones de navegación de regalos (Laterales) */
+        .gift-nav-btn {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1000;
+            padding: 0 0 5px 0 !important;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px !important;
+            border: 2px solid white !important;
+        }
+        #btn-prev-gift { left: 20px; background: rgba(0, 91, 227, 0.8) !important; }
+        #btn-next-gift { right: 20px; background: rgba(26, 171, 0, 0.8) !important; }
+
+        /* Botones de acción de regalos (Inferior Centro) */
+        .gift-action-btn {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            padding: 15px 40px !important;
+            font-size: 22px !important;
+            width: auto !important;
+            background: rgba(222, 131, 255, 0.9) !important;
+            border: 2px solid white !important;
         }
 
-        .botonCerrarRegalo{
-            left: 45%;
-            background: rgb(255, 0, 0);
-            color: white
-        }
-
-        .botonAbrirRegalo{
-            left: 45%;
-            background:rgba(222, 131, 255, 0.9);
-        }
-        
         /* Modo Foto UI */
         #interfaz-foto {
             display: none;
@@ -150,8 +175,15 @@
             display: flex; justify-content: center;
         }
         .cerrar-camara {
-            position: absolute; top: -15px; right: -15px;
-            background: red; color: white; width: 30px; height: 30px; border-radius: 50%; font-size: 18px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            position: absolute; top: 10px; right: 25px;
+            background: rgba(255, 0, 0, 0.8); color: white; width: 40px; height: 40px; 
+            border-radius: 50%; font-size: 20px; border: 2px solid white; 
+            cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0 0 4px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            z-index: 20;
+        }
+        #btn-close-view {
+            background: rgba(255, 0, 0, 0.8) !important;
         }
 
         /* Botones de acción principales */
@@ -240,24 +272,27 @@
     <!-- Contenedor del Botón Inicial (En la pared trasera virtualmente, pero botón físico aquí) -->
     <div class="ui-layer">
         <div id="controles-principales">
-            <button id="boton-modo-foto" class="btn">📷 Modo Foto </button>
+            <button id="boton-modo-foto" class="btn btn-neon">📷 Modo Foto </button>
             <div id="controles-resultado">
-                <button id="boton-repetir" class="btn">Repetir Foto</button>
+                <button id="boton-repetir" class="btn btn-no-pulse">Repetir Foto</button>
                 <button id="boton-compartir" class="btn"><img src="svg/icono_compartir.svg" alt="Icono de compartir"> Compartir 🎁</button>
             </div>
         </div>
     </div>
 
+    <!-- Botón de Cerrar/Volver (Ahora fuera del gift-ui para usarlo en la pila también) -->
+    <button id="btn-close-view" class="btn btn-no-pulse cerrar-camara" style="position:absolute; top:20px; right:25px; pointer-events:auto; z-index:1001; display: none;">✕</button>
+
     <!-- UI Secreta de Regalos -->
     <div id="gift-ui" style="display: none;">
-        <button id="btn-close-gift" class="btn botonRegalo botonCerrarRegalo">Cerrar regalo ✕</button>
         <div id="letter-overlay">
             <p>Hola, feliz cumpleaños Majo, Dios te bendiga hoy y siempre</p>
         </div>
         <div class="gift-controls">
-            <button id="btn-prev-gift" class="btn botonRegalo botonRegaloAnterior" style="display:none;">⬅ Anterior</button>
-            <button id="btn-action-gift" class="btn botonRegalo botonAbrirRegalo" style="display:none;">Abrir 🎁</button>
-            <button id="btn-next-gift" class="btn botonRegalo botonRegaloSiguiente" style="display:none;">Siguiente ➡</button>
+            <button id="btn-prev-gift" class="btn gift-nav-btn btn-no-pulse" style="display:none;">⬅</button>
+            <button id="btn-action-gift" class="btn gift-action-btn" style="display:none;">Abrir 🎁</button>
+            <button id="btn-close-box" class="btn gift-action-btn" style="display:none; background:rgba(255, 80, 80, 0.9) !important;">Cerrar 📦</button>
+            <button id="btn-next-gift" class="btn gift-nav-btn btn-no-pulse" style="display:none;">➡</button>
         </div>
     </div>
 
@@ -283,7 +318,7 @@
 
         // --- CONFIGURACIÓN BOMBILLO ---
         // Modifica estos valores para mover el bombillo
-        const configBombillo = { x: 0, y: 13, z: -15 }; 
+        const configBombillo = { x: 0, y: 13, z: 10 }; 
 
         // --- Configuración Escena ---
         const contenedor = document.getElementById('contenedor-canvas');
@@ -292,7 +327,7 @@
         // escena.fog = new THREE.Fog(0xffe4e1, 10, 50); // Niebla para suavizar el fondo (DESACTIVADA)
 
         const camara = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
-        const renderizador = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); // preserveDrawingBuffer es necesario para tomar la foto
+        const renderizador = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); // Antialias false para rendimiento
         renderizador.setSize(window.innerWidth, window.innerHeight);
         renderizador.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Hace que se vea nítido en celulares
         renderizador.shadowMap.enabled = true; // Activar sombras
@@ -301,7 +336,7 @@
         // --- Controles ---
         const controles = new OrbitControls(camara, renderizador.domElement);
         controles.enablePan = false; // Bloquear movimiento lateral de la cámara
-        controles.enableZoom = false; // Bloquear zoom para sensación de "estar parado"
+        controles.enableZoom = true; // Habilitar zoom (gesto de pellizco)
         controles.maxPolarAngle = Math.PI; // Permitir mirar hasta arriba
         controles.rotateSpeed = -0.5; // Invertir rotación para sensación de "mirar alrededor" (drag to look)
         
@@ -331,6 +366,10 @@
         // Luz de las velas (se crea con cada vela)
         const candleLights = []; // Array para guardar las luces y apagarlas
         const flameMeshes = [];  // Array para guardar las llamas y ocultarlas
+        // Variables globales para el reloj
+        let manecillaHora = null;
+        let manecillaMinuto = null;
+
         let tapCount = 0; // Contador de toques en el pastel
 
         // --- Materiales ---
@@ -427,8 +466,9 @@
         const materialParedOndas = new THREE.MeshStandardMaterial({ 
             map: crearTexturaOndas(),
             side: THREE.BackSide,
-            roughness: 0.05,   // 👈 entre menor el numero aumenta el reflejo el brillo
-            metalness: 0.1    // 👈 material no metálico
+            color: 0xFFFFFF,   // Forzar color blanco
+            roughness: 0.005,    // Copiado de los globos
+            metalness: 0.005,     // Reducido para que no se vea negro
         });
         const materialParedPlana = new THREE.MeshStandardMaterial({ color: 0xFFFFFF, side: THREE.BackSide }); // las demas paredes son blancas
         const materialParedAzulejo = new THREE.MeshStandardMaterial({ map: crearTexturaAzulejo(), side: THREE.BackSide, roughness: 0.1, metalness: 0.1 }); // Brillante
@@ -469,7 +509,7 @@
         });
 
         // Tablero cuadrado de la mesa (10 ancho x 10 profundo)
-        const geoTableroMesa = new THREE.BoxGeometry(10, 0.4, 10);
+        const geoTableroMesa = new THREE.BoxGeometry(14, 0.4, 14); // Mesa más grande
         const tableroMesa = new THREE.Mesh(geoTableroMesa, materialVidrio); // Usamos el material de vidrio
         tableroMesa.position.y = 5.45; // Altura del tablero (ajustado sobre bases)
         tableroMesa.receiveShadow = false; // El vidrio no suele recibir sombras duras
@@ -657,15 +697,15 @@
         // Z: -atrás / +adelante
         
         // Posiciones locales de los regalos
-        const posR1 = new THREE.Vector3(-3.8, 8.4, -4.6);
-        const posR2 = new THREE.Vector3(3.5, 6.75, -4.2);
-        const posR3 = new THREE.Vector3(-4.0, 6.25, 1);
+        const posR1 = new THREE.Vector3(-5.5, 8.4, -5.5); // Más afuera
+        const posR2 = new THREE.Vector3(5.5, 6.75, -5.0); // Más afuera
+        const posR3 = new THREE.Vector3(-5.0, 6.25, 2);   // Más afuera
 
-        crearRegalo(0xff69b4, 0xffff00, new THREE.Vector3(-3.5, 6.65, -4.5), 2.0); // Grande Rosa Izq Atrás
+        crearRegalo(0xff69b4, 0xffff00, new THREE.Vector3(-5.0, 6.65, -5.5), 2.0); // Grande Rosa Izq Atrás
         crearRegalo(0xffd700, 0x0000ff, posR1, 1.5); // Dorado Mas atrás
         crearRegalo(0x00ffff, 0xff0000, posR2, 2.2); // Grande Cyan Der Atrás
         crearRegalo(0x32cd32, 0xffffff, posR3, 1.2); // Verde
-        crearRegalo(0xba55d3, 0xffd700, new THREE.Vector3(4.0, 6.4, 2), 1.5); // Púrpura
+        crearRegalo(0xba55d3, 0xffd700, new THREE.Vector3(5.5, 6.4, 3), 1.5); // Púrpura
 
         // --- BOMBAS (Globos) SUJETAS A REGALOS ---
         // Calculamos posición del regalo en el mundo y ponemos el globo arriba
@@ -674,7 +714,7 @@
         // Regalo 2 (Cyan)
         crearGlobo(0xc0c0c0, getRegaloGlobalPos(posR2).add(new THREE.Vector3(0, 7, 0)), getRegaloGlobalPos(posR2));
         // Regalo 3 (Verde)
-        crearGlobo(0xda70d6, getRegaloGlobalPos(posR3).add(new THREE.Vector3(0, 5, -1)), getRegaloGlobalPos(posR3));
+        crearGlobo(0xda70d6, getRegaloGlobalPos(posR3).add(new THREE.Vector3(0, 5, 0)), getRegaloGlobalPos(posR3));
 
 
 //////////////////////// Decoracion de pelicula UP escalera ////////////////////////
@@ -1020,7 +1060,7 @@
         mallaFoto.position.y = -8; 
 
         grupoMarco.add(mallaFoto);
-        grupoMarco.position.set(0, 7, -19.9); // Pegado casi a la pared de fondo
+        grupoMarco.position.set(0, 7, -19.5); // Delante del reloj para taparlo con la silueta
         escena.add(grupoMarco);
 
         // Control de carga
@@ -1043,16 +1083,25 @@
             const grupoLuz = new THREE.Group();
             grupoLuz.position.set(configBombillo.x, configBombillo.y, configBombillo.z);
 
-            // Cable
-            const cable = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3), new THREE.MeshStandardMaterial({color: 0x111111}));
-            cable.position.y = 1.5; // Colgando hacia arriba desde el centro del grupo
-            grupoLuz.add(cable);
+            // Plafon para el bombillo
+            const basePlafon = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 0.2), new THREE.MeshStandardMaterial({color: 0xFFFFFF}));
+            basePlafon.position.y = 1.5; // Colgando hacia arriba desde el centro del grupo
+            const cuerpoPlafon = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.2), new THREE.MeshStandardMaterial({color: 0xFFFFFF}));
+            cuerpoPlafon.position.y = 1.3; // Colgando hacia arriba desde el centro del grupo
+            grupoLuz.add(basePlafon, cuerpoPlafon);
 
             // Bombilla
-            const geoBombilla = new THREE.SphereGeometry(0.5, 16, 16);
-            const matBombilla = new THREE.MeshBasicMaterial({ color: 0xFFFFFF }); // Blanco brillante
-            const bombilla = new THREE.Mesh(geoBombilla, matBombilla);
-            grupoLuz.add(bombilla);
+            // Creamos la roscade la bombilla
+            const geoRoscaBombilla = new THREE.CylinderGeometry(0.3, 0.3, 0.07);
+            const matRoscaBombilla = new THREE.MeshStandardMaterial({color: 0x9E9E9E}); // Blanco brillante
+            const roscaBombilla = new THREE.Mesh(geoRoscaBombilla, matRoscaBombilla);
+            roscaBombilla.position.y = 1.15;
+            // Creamos el circulo de luz de la bombilla
+            const geoEsferaBombilla = new THREE.SphereGeometry(0.5, 16, 16);
+            const matEsferaBombilla = new THREE.MeshBasicMaterial({ color: 0xFFFFFF }); // Blanco brillante
+            const esferaBombilla = new THREE.Mesh(geoEsferaBombilla, matEsferaBombilla);
+            esferaBombilla.position.y = 0.7;
+            grupoLuz.add(roscaBombilla, esferaBombilla);
 
             // Luz PointLight que emana del bombillo
             const luz = new THREE.PointLight(0xFFFFFF, 1.5, 30); // Luz blanca, más intensa y con más alcance
@@ -1064,6 +1113,153 @@
         crearBombillo();
 
         // 5. Texto y Velas (Cargamos fuente)
+        // 5.1 Función para crear el Reloj (se llama dentro del loader)
+        function crearReloj(font) {
+            const grupoReloj = new THREE.Group();
+            // Posición en la pared de ondas (Atrás, Z=-19.5 aprox), bien arriba
+            grupoReloj.position.set(0, 10, -19.8); // Más pegado a la pared
+            escena.add(grupoReloj);
+
+            // --- CONFIGURACIÓN DE COLORES DEL RELOJ ---
+            // Cambia estos valores para ajustar los tonos
+            const colorGrisClaro = 0x999999; // Gris más oscuro
+            const colorGrisOscuro = 0x333333; // "Negro" o gris muy oscuro
+            // LISTA: Pon aquí los números que quieres que sean oscuros
+            const numerosOscuros = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]; 
+
+            // Helper para contornos (Oscurece el color base para la línea)
+            const agregarContorno = (mesh, colorHex) => {
+                const edges = new THREE.EdgesGeometry(mesh.geometry);
+                const colorObj = new THREE.Color(colorHex);
+                // Disminuir luminosidad para el contorno
+                const colorContorno = colorObj.offsetHSL(0, 0, -0.4); 
+                const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: colorContorno }));
+                mesh.add(line);
+            };
+
+            // Crear Números
+            const radio = 5; // Tamaño del reloj
+            for(let i=1; i<=12; i++) {
+                let textoStr = i.toString();
+                // Texto en inglés para los puntos cardinales
+                if(i===12) textoStr = "TWELVE";
+                if(i===3) textoStr = "THREE";
+                if(i===6) textoStr = "SIX";
+                if(i===9) textoStr = "NINE";
+
+                // Tamaño de letras ajustado a que tan larga es la palabra
+                const tamano = (i%3===0) ? 0.3 : 0.6; // Texto un poco más pequeño si es palabra larga
+                const geoNum = new TextGeometry(textoStr, {
+                    font: font, size: tamano, height: 0.3, curveSegments: 4
+                });
+                geoNum.center();
+
+                const angulo = Math.PI/2 - (i * Math.PI / 6); // Ajuste trigonométrico
+                const tx = Math.cos(angulo) * radio;
+                const ty = Math.sin(angulo) * radio;
+
+                const esOscuro = numerosOscuros.includes(i);
+                const colorFinal = esOscuro ? colorGrisOscuro : colorGrisClaro;
+                
+                const meshNum = new THREE.Mesh(geoNum, new THREE.MeshStandardMaterial({ color: colorFinal }));
+                meshNum.position.set(tx, ty, 0);
+                agregarContorno(meshNum, colorFinal);
+                grupoReloj.add(meshNum);
+            }
+
+            // Eje Central
+            const eje = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.6, 16).rotateX(Math.PI/2), new THREE.MeshStandardMaterial({ color: colorGrisOscuro }));
+            agregarContorno(eje, colorGrisOscuro);
+            grupoReloj.add(eje);
+
+            // Manecillas
+            const matManecilla = new THREE.MeshStandardMaterial({ color: colorGrisOscuro });
+            
+            // Manecilla de la Hora (Puntuda y recortada 1/4)
+            const shapeHora = new THREE.Shape();
+            shapeHora.moveTo(-0.125, 0); shapeHora.lineTo(0.125, 0); shapeHora.lineTo(0, 3.4); shapeHora.lineTo(-0.125, 0);
+            const geoHora = new THREE.ExtrudeGeometry(shapeHora, { depth: 0.1, bevelEnabled: false });
+            manecillaHora = new THREE.Mesh(geoHora, matManecilla);
+            manecillaHora.position.z = 0.1;
+            agregarContorno(manecillaHora, colorGrisOscuro);
+            grupoReloj.add(manecillaHora);
+
+            // Manecilla de los Minutos (Puntuda y recortada 1/4)
+            const matMinuto = new THREE.MeshStandardMaterial({ color: colorGrisOscuro });
+            const shapeMin = new THREE.Shape();
+            shapeMin.moveTo(-0.075, 0); shapeMin.lineTo(0.075, 0); shapeMin.lineTo(0, 4.5); shapeMin.lineTo(-0.075, 0);
+            const geoMin = new THREE.ExtrudeGeometry(shapeMin, { depth: 0.1, bevelEnabled: false });
+            
+            manecillaMinuto = new THREE.Mesh(geoMin, matMinuto);
+            manecillaMinuto.position.z = 0.2;
+            agregarContorno(manecillaMinuto, colorGrisOscuro);
+            grupoReloj.add(manecillaMinuto);
+            grupoReloj.position.y = 4;
+        }
+
+        // --- APLIQUES DE PARED (WALL SCONCES) ---
+        // MODIFICA AQUÍ LA UBICACIÓN DE CADA APLIQUE
+        const configApliqueIzq = { x: -11.5, y: 12.5, z: -19.8 }; // Aplique Izquierdo
+        const configApliqueDer = { x: 11.5, y: 12.5, z: -19.8 };  // Aplique Derecho
+
+        function crearAplique(config) {
+            const grupoAplique = new THREE.Group();
+            grupoAplique.position.set(config.x, config.y, config.z);
+
+            // 1. Cuerpo Minimalista (Rectángulo Horizontal)
+            // Diseño: Bloque ancho, bajo y pegado a la pared
+            const geoCuerpo = new THREE.BoxGeometry(1.5, 1, 1.5); 
+            const matCuerpo = new THREE.MeshStandardMaterial({ 
+                color: 0x222222, // Gris oscuro casi negro
+                metalness: 0.8, 
+                roughness: 0.2 
+            });
+            const meshCuerpo = new THREE.Mesh(geoCuerpo, matCuerpo);
+            grupoAplique.add(meshCuerpo);
+
+            // 2. Superficies emisoras (Tiras de luz arriba y abajo)
+            const geoLuz = new THREE.PlaneGeometry(1.5, 1.3);
+            const matLuz = new THREE.MeshBasicMaterial({ color: 0xFFFDD0 }); // Color luz visible
+            
+            // Tira superior (simula que la luz sale de arriba)
+            const luzVisArriba = new THREE.Mesh(geoLuz, matLuz);
+            luzVisArriba.rotation.x = -Math.PI / 2; // Mirando hacia arriba
+            luzVisArriba.position.y = 0.51; // Sobre la superficie
+            grupoAplique.add(luzVisArriba);
+
+            // Tira inferior (simula que la luz sale de abajo)
+            const luzVisAbajo = new THREE.Mesh(geoLuz, matLuz);
+            luzVisAbajo.rotation.x = Math.PI / 2; // Mirando hacia abajo
+            luzVisAbajo.position.y = -0.51; 
+            grupoAplique.add(luzVisAbajo);
+
+            // 3. Luces Potentes (Efecto Bañador de Pared)
+            // Luz Hacia Arriba
+            const spotArriba = new THREE.SpotLight(0xFFCC66, 15.0, 20, Math.PI/3, 0.5, 1);
+            spotArriba.position.set(0, 0.2, 0);
+            spotArriba.target.position.set(0, 10, -0.5); // Apunta arriba y pegado a la pared
+            grupoAplique.add(spotArriba);
+            grupoAplique.add(spotArriba.target);
+
+            // Luz Hacia Abajo
+            const spotAbajo = new THREE.SpotLight(0xFFCC66, 12.0, 20, Math.PI/3, 0.5, 1);
+            spotAbajo.position.set(0, -0.2, 0);
+            spotAbajo.target.position.set(0, -10, -0.5); // Apunta abajo y pegado a la pared
+            grupoAplique.add(spotAbajo);
+            grupoAplique.add(spotAbajo.target);
+
+            // Luz de relleno frontal tenue para que el negro no se vea plano
+            const luzRelleno = new THREE.PointLight(0xFFCC66, 1.0, 5);
+            luzRelleno.position.set(0, 0, 1);
+            grupoAplique.add(luzRelleno);
+
+            escena.add(grupoAplique);
+        }
+
+        // Crear los dos apliques usando las configuraciones
+        crearAplique(configApliqueIzq);
+        crearAplique(configApliqueDer);
+
         const cargadorFuentes = new FontLoader();
         cargadorFuentes.load('https://unpkg.com/three@0.160.0/examples/fonts/helvetiker_regular.typeface.json', function (fuente) {
             
@@ -1131,6 +1327,9 @@
 
             crearLlama(-0.35); // Para el primer número (2)
             crearLlama(0.2);  // Para el Segundo número (2) (ajustado en X)
+
+            // --- CREAR EL RELOJ DE PARED ---
+            crearReloj(fuente);
 
             // --- LETRERO "FELIZ CUMPLE" CURVO Y EN HOJAS (Pared de Ondas / -Z) ---
             const grupoLetrero = new THREE.Group();
@@ -1247,10 +1446,10 @@ const smokeTexture = crearTexturaHumo();
 // const smokeTexture = new THREE.TextureLoader().load('...'); // Borra o comenta la línea vieja
 
         const smokeMaterial = new THREE.MeshLambertMaterial({ 
-            color: 0xcccccc, 
+            color: 0x555555, // Gris oscuro para que se vea sobre el fondo claro
             map: smokeTexture, 
             transparent: true, 
-            opacity: 0.4,
+            opacity: 0.8, // Más visible al inicio
             depthWrite: false
         });
         const smokeGeo = new THREE.PlaneGeometry(0.5, 0.5);
@@ -1279,7 +1478,7 @@ const smokeTexture = crearTexturaHumo();
                 p.position.x += p.userData.vx;
                 p.position.z += p.userData.vz;
                 p.rotation.z += 0.01;
-                p.material.opacity -= 0.01;
+                p.material.opacity -= 0.005; // Desvanecimiento más lento
                 p.scale.multiplyScalar(1.02); // Expandir
                 if(p.material.opacity <= 0) {
                     grupoPastel.remove(p);
@@ -1304,6 +1503,8 @@ const smokeTexture = crearTexturaHumo();
         let gifts = [];
         let giftMode = 'none'; // 'none', 'pile', 'viewing'
         let currentGiftIndex = 0;
+        let isBoxOpen = false; // Estado de la caja
+        let isGiftAnimating = false; // Para evitar clicks múltiples y errores de transición
         const FOCUS_POSITION = new THREE.Vector3(0, 2, 0); // Position in front of camera (relative to giftGroup or world?)
         // Let's use local position relative to giftGroup for simplicity if we can
         // But giftGroup is at (0, -3.5, -5). Camera at (0, 8, 8) looking at (0, -2, -5).
@@ -1395,10 +1596,19 @@ const smokeTexture = crearTexturaHumo();
         }, undefined, (e) => console.log("Rosa no encontrada (es normal si no está local)", e));
 
         // Regalo Interno
-        cargadorRegalos.load('modelos_3d/carl_fredricksen.glb', function(gltf) {
+        cargadorRegalos.load('modelos_3d/cartera.glb', function(gltf) {
             innerGiftModel = gltf.scene;
-            innerGiftModel.scale.set(configModelo.escala, configModelo.escala, configModelo.escala);
-            innerGiftModel.position.set(0, 1.5, 0); // Dentro de la caja
+            innerGiftModel.scale.set(25, 25, 25);
+            innerGiftModel.position.set(-1.3, -1, 1.9); // Dentro de la caja
+            innerGiftModel.rotation.x = -Math.PI / 8;
+            
+            // Reiniciar color del modelo interno
+            innerGiftModel.traverse((child) => {
+                if (child.isMesh) {
+                    child.material.color.setHex(0x4D4D4D);
+                }
+            });
+
             innerGiftModel.visible = false; // Oculto al inicio
             giftBoxModel.add(innerGiftModel); // Añadido al modelo de la caja para que se muevan juntos
         }, undefined, (e) => console.log("Regalo interno no encontrado", e));
@@ -1455,7 +1665,8 @@ const smokeTexture = crearTexturaHumo();
         const btnNextGift = document.getElementById('btn-next-gift');
         const btnPrevGift = document.getElementById('btn-prev-gift');
         const btnActionGift = document.getElementById('btn-action-gift');
-        const btnCloseGift = document.getElementById('btn-close-gift');
+        const btnCloseBox = document.getElementById('btn-close-box');
+        const btnCloseView = document.getElementById('btn-close-view'); // Anteriormente btn-close-gift
 
         let flujoVideo = null; // Guardará el stream de la cámara
         let segmentador = null; // Variable para el modelo de IA
@@ -1563,7 +1774,7 @@ const smokeTexture = crearTexturaHumo();
             const average = sum / bufferLength;
 
             // Umbral de volumen BAJADO para facilitar detección (antes 45)
-            if (average > 25) {
+            if (average > 10) {
                 apagarVelasYActivarRegalo();
             }
 
@@ -1629,8 +1840,11 @@ const smokeTexture = crearTexturaHumo();
 
                 const currentGift = gifts[currentGiftIndex];
                 if (currentGift && currentGift.model) {
-                    currentGift.model.rotation.y += deltaMove.x * 0.01;
-                    currentGift.model.rotation.x += deltaMove.y * 0.01;
+                    // Usar rotación en ejes del mundo para evitar bloqueo de ejes (Gimbal Lock)
+                    // y permitir rotación libre en todas direcciones
+                    const sensibilidad = 0.005;
+                    currentGift.model.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), deltaMove.x * sensibilidad);
+                    currentGift.model.rotateOnWorldAxis(new THREE.Vector3(1, 0, 0), deltaMove.y * sensibilidad);
                 }
 
                 previousMousePosition = { x: e.clientX, y: e.clientY };
@@ -1667,6 +1881,9 @@ const smokeTexture = crearTexturaHumo();
                 giftGroup.visible = true;
                 giftMode = 'pile';
 
+                // Mostrar botón de salida en la vista de pila
+                btnCloseView.style.display = 'flex';
+
                 // Mover cámara a vista de regalo (Desde arriba y cerca)
                 animarCamara(new THREE.Vector3(0, 8, 8), new THREE.Vector3(0, -2, -5));
 
@@ -1679,11 +1896,11 @@ const smokeTexture = crearTexturaHumo();
         // --- SISTEMA DE VISUALIZACIÓN DE REGALOS ---
 
         function enterGiftView(index) {
+            grupoPastel.visible = true;
             if (giftMode === 'viewing') return;
             giftMode = 'viewing';
             currentGiftIndex = index;
             giftUI.style.display = 'block';
-            btnCloseGift.style.display = 'inline-block'; // Close button top right
             
             // Disable camera controls
             controles.enabled = false;
@@ -1723,12 +1940,19 @@ const smokeTexture = crearTexturaHumo();
 
         function updateGiftView() {
             const gift = gifts[currentGiftIndex];
+            isGiftAnimating = true; // Bloquear interacción durante la animación
             
             // Hide/Reset others
+            let animationsPending = 0;
             gifts.forEach((g, i) => {
                 if (i !== currentGiftIndex) {
-                    // Animate out or just hide
-                    new TWEEN.Tween(g.model.scale).to({x:0, y:0, z:0}, 500).start();
+                    // Animar hacia afuera y ocultar al finalizar
+                    new TWEEN.Tween(g.model.scale)
+                        .to({x:0, y:0, z:0}, 500)
+                        .onComplete(() => {
+                            if (i !== currentGiftIndex) g.model.visible = false;
+                        })
+                        .start();
                 } else {
                     g.model.visible = true;
                     // Calcular posición frente a la cámara actual
@@ -1764,10 +1988,13 @@ const smokeTexture = crearTexturaHumo();
                         targetRot = {x: dummy.rotation.x, y: dummy.rotation.y, z: dummy.rotation.z};
                     }
 
+                    animationsPending++;
                     new TWEEN.Tween(g.model.rotation).to(targetRot, 1000).easing(TWEEN.Easing.Quadratic.Out).start();
-                    new TWEEN.Tween(g.model.scale).to(g.originalState.scale, 1000).easing(TWEEN.Easing.Quadratic.Out).start();
+                    new TWEEN.Tween(g.model.scale).to(g.originalState.scale, 1000).easing(TWEEN.Easing.Quadratic.Out).onComplete(() => { isGiftAnimating = false; }).start();
                 }
             });
+            
+            if(animationsPending === 0) isGiftAnimating = false;
 
             // Update UI Buttons
             btnPrevGift.style.display = currentGiftIndex > 0 ? 'inline-block' : 'none';
@@ -1775,10 +2002,17 @@ const smokeTexture = crearTexturaHumo();
             
             // Open button only for last gift (Box)
             if (currentGiftIndex === gifts.length - 1) {
-                btnActionGift.style.display = 'inline-block';
-                btnActionGift.textContent = "Abrir 🎁";
+                if (isBoxOpen) {
+                    btnActionGift.style.display = 'none';
+                    btnCloseBox.style.display = 'inline-block';
+                } else {
+                    btnActionGift.style.display = 'inline-block';
+                    btnActionGift.textContent = "Abrir 🎁";
+                    btnCloseBox.style.display = 'none';
+                }
             } else {
                 btnActionGift.style.display = 'none';
+                btnCloseBox.style.display = 'none';
             }
 
             // Letter overlay for letter gift?
@@ -1791,20 +2025,33 @@ const smokeTexture = crearTexturaHumo();
         }
 
         btnNextGift.addEventListener('click', () => {
-            if (currentGiftIndex < gifts.length - 1) {
-                currentGiftIndex++;
-                updateGiftView();
-            }
+            if (isGiftAnimating) return; // Si se está moviendo, ignorar click
+            const proceed = () => {
+                if (currentGiftIndex < gifts.length - 1) {
+                    currentGiftIndex++;
+                    updateGiftView();
+                }
+            };
+            // Si la caja está abierta, cerrarla primero
+            if (isBoxOpen) cerrarCajaRegalo(proceed);
+            else proceed();
         });
 
         btnPrevGift.addEventListener('click', () => {
-            if (currentGiftIndex > 0) {
-                currentGiftIndex--;
-                updateGiftView();
-            }
+            if (isGiftAnimating) return; // Si se está moviendo, ignorar click
+            const proceed = () => {
+                if (currentGiftIndex > 0) {
+                    currentGiftIndex--;
+                    updateGiftView();
+                }
+            };
+            // Si la caja está abierta, cerrarla primero
+            if (isBoxOpen) cerrarCajaRegalo(proceed);
+            else proceed();
         });
         
         function abrirCajaRegalo() {
+            isBoxOpen = true;
             // Animación abrir caja
             // Lid goes up and scales down/disappears
             new TWEEN.Tween(giftLid.position).to({ y: 8 }, 1000).start();
@@ -1817,16 +2064,74 @@ const smokeTexture = crearTexturaHumo();
             if (innerGiftModel) {
                 innerGiftModel.visible = true;
                 // Animate inner gift slightly up?
-                new TWEEN.Tween(innerGiftModel.position).to({ y: 2 }, 1000).start();
+                //Ubicacion de donde sale el regalo de la caja
+                new TWEEN.Tween(innerGiftModel.position).to({ y: 1 }, 1000).start();
             }
             
-            btnActionGift.style.display = 'none';
+            updateGiftView(); // Actualizar botones
+        }
+
+        function cerrarCajaRegalo(onComplete) {
+            isBoxOpen = false;
+            
+            // Animación invertida (Cerrar caja)
+            // Lid vuelve a su posición y escala original
+            new TWEEN.Tween(giftLid.position).to({ y: 3.25, x: 0 }, 1000).start();
+            new TWEEN.Tween(giftLid.rotation).to({ z: 0 }, 1000).start();
+            new TWEEN.Tween(giftLid.scale).to({ x: 1, y: 1, z: 1 }, 1000).start();
+
+            // Box vuelve a su posición y escala original
+            new TWEEN.Tween(giftBox.position).to({ y: 1.5 }, 1000).start();
+            new TWEEN.Tween(giftBox.scale).to({ x: 1, y: 1, z: 1 }, 1000).start();
+
+            if (innerGiftModel) {
+                // Regalo interno baja y se oculta
+                new TWEEN.Tween(innerGiftModel.position).to({ y: 1 }, 1000).start();
+            }
+
+            // Actualizar botones inmediatamente para evitar clicks dobles
+            btnCloseBox.style.display = 'none'; 
+            
+            setTimeout(() => {
+                if (innerGiftModel) innerGiftModel.visible = false;
+                // Solo actualizar la vista si no hay una acción posterior (como cambiar de regalo)
+                if (onComplete) {
+                    onComplete();
+                } else {
+                    updateGiftView();
+                }
+            }, 1000);
         }
         
         btnActionGift.addEventListener('click', abrirCajaRegalo);
+        btnCloseBox.addEventListener('click', () => cerrarCajaRegalo());
 
-        btnCloseGift.addEventListener('click', () => {
-            exitGiftView();
+        function resetToInitialState() {
+            // 1. Ocultar regalos y volver al pastel
+            giftMode = 'none';
+            giftGroup.visible = false;
+            grupoPastel.visible = true;
+            
+            // 2. Restaurar UI principal
+            btnCloseView.style.display = 'none';
+            controlesPrincipales.style.display = 'block';
+            botonModoFoto.style.display = 'inline-block';
+
+            // 3. Restaurar cámara
+            moverCamaraAFrente();
+            controles.enabled = true;
+        }
+
+        btnCloseView.addEventListener('click', () => {
+            if (giftMode === 'viewing') {
+                if (isBoxOpen) {
+                    cerrarCajaRegalo(exitGiftView);
+                } else {
+                    exitGiftView();
+                }
+            } else if (giftMode === 'pile') {
+                resetToInitialState();
+            }
         });
 
         // Importar TWEEN para animaciones simples sin bloat
@@ -1857,10 +2162,14 @@ const smokeTexture = crearTexturaHumo();
             // 1. Mensaje inicial: No moverse
             mensajeEstado.textContent = "Trata de no moverte, estamos capturando este momento inolvidable...";
             mensajeEstado.style.display = 'block';
+            // Colocar emoji de camara con flash cuando se de clic en el boton
             botonTomarFoto.textContent = "📸";
             
-            // Esperamos un frame para que se renderice
-            await new Promise(r => setTimeout(r, 1300));
+            // Pequeña pausa para asegurar que el usuario lea y la UI se actualice antes de congelar
+            await new Promise(r => setTimeout(r, 1));
+            mensajeEstado.textContent = "Ya puedes moverte, estamos haciendo unos retoques finales a la foto...";
+            mensajeEstado.style.display = 'block';
+            
 
             // --- Captura del video en canvas ---
             const escalaCaptura = 10; // Aumentamos la resolución para más nitidez
@@ -1884,6 +2193,10 @@ const smokeTexture = crearTexturaHumo();
 
             // Pausar video para congelar la imagen visual
             elementoVideo.pause();
+            
+            // Asegurar que el mensaje de éxito se vea
+            mensajeEstado.style.display = 'block';
+            await new Promise(r => requestAnimationFrame(r)); // Forzar render
 
             // 3. Mensaje secundario: Ya puedes moverte
             mensajeEstado.textContent = "Ya puedes moverte, estamos haciendo unos retoques finales a la foto...";
@@ -2067,6 +2380,17 @@ const smokeTexture = crearTexturaHumo();
             updateSmoke(); // Actualizar partículas de humo
             TWEEN.update(); // Actualizar interpolaciones
             
+            // --- Animación del Reloj (Hora Real) ---
+            if (manecillaHora && manecillaMinuto) {
+                const ahora = new Date();
+                // Segundos para movimiento fluido (opcional, si quieres "tick" quita los segundos)
+                const seg = ahora.getSeconds();
+                const min = ahora.getMinutes() + seg/60;
+                const hor = (ahora.getHours() % 12) + min/60;
+                manecillaMinuto.rotation.z = -min * (Math.PI * 2 / 60);
+                manecillaHora.rotation.z = -hor * (Math.PI * 2 / 12);
+            }
+
             controles.update();
             renderizador.render(escena, camara);
         }
