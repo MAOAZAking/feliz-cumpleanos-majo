@@ -2025,7 +2025,7 @@ const smokeTexture = crearTexturaHumo();
         }
 
         btnNextGift.addEventListener('click', () => {
-            if (isGiftAnimating) return; // Si se está moviendo, ignorar click
+            //if (isGiftAnimating) return; // Si se está moviendo, ignorar click
             const proceed = () => {
                 if (currentGiftIndex < gifts.length - 1) {
                     currentGiftIndex++;
@@ -2038,7 +2038,7 @@ const smokeTexture = crearTexturaHumo();
         });
 
         btnPrevGift.addEventListener('click', () => {
-            if (isGiftAnimating) return; // Si se está moviendo, ignorar click
+            //if (isGiftAnimating) return; // Si se está moviendo, ignorar click
             const proceed = () => {
                 if (currentGiftIndex > 0) {
                     currentGiftIndex--;
