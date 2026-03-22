@@ -2030,11 +2030,15 @@ const smokeTexture = crearTexturaHumo();
                 if (currentGiftIndex < gifts.length - 1) {
                     currentGiftIndex++;
                     updateGiftView();
+                } else {
+                    isGiftAnimating = false;
                 }
             };
             // Si la caja está abierta, cerrarla primero
-            if (isBoxOpen) cerrarCajaRegalo(proceed);
-            else proceed();
+            if (isBoxOpen) {
+                isGiftAnimating = true;
+                cerrarCajaRegalo(proceed);
+            } else proceed();
         });
 
         btnPrevGift.addEventListener('click', () => {
@@ -2043,11 +2047,15 @@ const smokeTexture = crearTexturaHumo();
                 if (currentGiftIndex > 0) {
                     currentGiftIndex--;
                     updateGiftView();
+                } else {
+                    isGiftAnimating = false;
                 }
             };
             // Si la caja está abierta, cerrarla primero
-            if (isBoxOpen) cerrarCajaRegalo(proceed);
-            else proceed();
+            if (isBoxOpen) {
+                isGiftAnimating = true;
+                cerrarCajaRegalo(proceed);
+            } else proceed();
         });
         
         function abrirCajaRegalo() {
