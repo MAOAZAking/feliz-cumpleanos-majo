@@ -1873,8 +1873,9 @@ const smokeTexture = crearTexturaHumo();
                 // Ocultar UI de Foto
                 botonCerrarCamara.click();
                 
-                // Ocultar controles principales
+                // Ocultar controles principales y pastel
                 controlesPrincipales.style.display = 'none';
+                grupoPastel.visible = false; 
                 
                 // Mostrar Grupo de Regalo
                 giftGroup.visible = true;
@@ -1895,6 +1896,7 @@ const smokeTexture = crearTexturaHumo();
         // --- SISTEMA DE VISUALIZACIÓN DE REGALOS ---
 
         function enterGiftView(index) {
+            grupoPastel.visible = true;
             if (giftMode === 'viewing') return;
             giftMode = 'viewing';
             currentGiftIndex = index;
@@ -2126,10 +2128,6 @@ const smokeTexture = crearTexturaHumo();
             giftMode = 'none';
             giftGroup.visible = false;
             grupoPastel.visible = true;
-            
-            // Restaurar velas encendidas al volver al inicio
-            candleLights.forEach(l => l.intensity = 0.7);
-            flameMeshes.forEach(m => m.visible = true);
             
             // 2. Restaurar UI principal
             btnCloseView.style.display = 'none';
