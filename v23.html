@@ -171,11 +171,11 @@
             width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); border-radius: 6px;
         }
         .camera-controls {
-            position: absolute; bottom: 10px; width: 100%;
+            position: absolute; bottom: 30px; width: 100%;
             display: flex; justify-content: center;
         }
         .cerrar-camara {
-            position: absolute; top: 5px; right: 5px;
+            position: absolute; top: 10px; right: 25px;
             background: rgba(255, 0, 0, 0.8); color: white; width: 40px; height: 40px; 
             border-radius: 50%; font-size: 20px; border: 2px solid white; 
             cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0 0 4px 0;
@@ -425,6 +425,44 @@
             return tex;
         }
 
+        // Función para crear textura de azulejo (Pared de enfrente)
+        function crearTexturaAzulejo() {
+            const width = 512;
+            const height = 512;
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            
+            // Fondo azul claro brillante
+            ctx.fillStyle = '#E0F7FA'; 
+            ctx.fillRect(0, 0, width, height);
+            
+            // Líneas de mortero
+            const cols = 4;
+            const rows = 4;
+            const tileW = width / cols;
+            const tileH = height / rows;
+            
+            ctx.strokeStyle = '#B0BEC5';
+            ctx.lineWidth = 4;
+            
+            // Dibujar rejilla
+            for(let i=0; i<=cols; i++) {
+                ctx.beginPath(); ctx.moveTo(i*tileW, 0); ctx.lineTo(i*tileW, height); ctx.stroke();
+            }
+            for(let i=0; i<=rows; i++) {
+                ctx.beginPath(); ctx.moveTo(0, i*tileH); ctx.lineTo(width, i*tileH); ctx.stroke();
+            }
+            
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.colorSpace = THREE.SRGBColorSpace;
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(5, 5);
+            return tex;
+        }
+
         const materialParedOndas = new THREE.MeshStandardMaterial({ 
             map: crearTexturaOndas(),
             side: THREE.BackSide,
@@ -433,7 +471,7 @@
             metalness: 0.005,     // Reducido para que no se vea negro
         });
         const materialParedPlana = new THREE.MeshStandardMaterial({ color: 0xFFFFFF, side: THREE.BackSide }); // las demas paredes son blancas
-        const materialParedAzulejo = new THREE.MeshStandardMaterial({ color: 0xE0F7FA, side: THREE.BackSide, roughness: 0.1, metalness: 0.1 }); // Brillante
+        const materialParedAzulejo = new THREE.MeshStandardMaterial({ map: crearTexturaAzulejo(), side: THREE.BackSide, roughness: 0.1, metalness: 0.1 }); // Brillante
         const materialTecho = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.BackSide });
         
         const materialesHabitacion = [
@@ -857,14 +895,14 @@
                 const ctxAnjeo = canvasAnjeo.getContext('2d');
                 ctxAnjeo.fillStyle = 'rgba(0,0,0,0)'; ctxAnjeo.fillRect(0,0,64,64); // Transparente
                 ctxAnjeo.strokeStyle = 'rgba(30,30,30,0.7)'; ctxAnjeo.lineWidth = 2; // Rejilla oscura
-                const step = 16;
+                const step = 8;
                 for(let i=0; i<64; i+=step) {
                     ctxAnjeo.beginPath(); ctxAnjeo.moveTo(i,0); ctxAnjeo.lineTo(i,64); ctxAnjeo.stroke();
                     ctxAnjeo.beginPath(); ctxAnjeo.moveTo(0,i); ctxAnjeo.lineTo(64,i); ctxAnjeo.stroke();
                 }
                 const texAnjeo = new THREE.CanvasTexture(canvasAnjeo);
                 texAnjeo.wrapS = THREE.RepeatWrapping; texAnjeo.wrapT = THREE.RepeatWrapping;
-                texAnjeo.repeat.set(20, 40);
+                texAnjeo.repeat.set(40, 80);
 
                 const matAnjeo = new THREE.MeshBasicMaterial({ map: texAnjeo, transparent: true, side: THREE.DoubleSide });
                 const mallaAnjeo = new THREE.Mesh(geoAnjeo, matAnjeo);
@@ -1001,33 +1039,8 @@
             grupo.position.set(-19.8, yPos, zPos); 
             escena.add(grupo);
         }
-
-        function crearCuadroDecorativo(zPos, yPos, ancho, alto) {
-            const grupo = new THREE.Group();
-            
-            // Marco de madera
-            //const matMarco = new THREE.MeshStandardMaterial({ color: 0x3d2b1f });
-            //const marco = new THREE.Mesh(new THREE.BoxGeometry(0.2, alto + 0.4, ancho + 0.4), matMarco);
-            //grupo.add(marco);
-
-            // Cargamos la textura de la rosa azul
-            const cargadorTextura = new THREE.TextureLoader();
-            const texturaLienzo = cargadorTextura.load('img/cuadro/rosa_azul.jpg');
-            texturaLienzo.colorSpace = THREE.SRGBColorSpace; // Asegura que los colores se vean reales
-
-            // Aplicamos la textura al lienzo en lugar de un color plano
-            const matLienzo = new THREE.MeshStandardMaterial({ map: texturaLienzo });
-            const lienzo = new THREE.Mesh(new THREE.BoxGeometry(0.25, alto, ancho), matLienzo);
-            grupo.add(lienzo);
-
-            grupo.position.set(-19.8, yPos, zPos - 15);
-            escena.add(grupo);
-        }
-
         // Ventana (Cerca del fondo, Z negativo)
         crearElementoPared(-8, 2, 8, 8, 'ventana');
-        // Cuadro decorativo al lado de la ventana
-        crearCuadroDecorativo(-1, 3, 4, 5); 
         // Puerta (Más lejos del fondo, Z positivo)
         crearElementoPared(8, -3.25, 7, 14, 'puerta');
 
