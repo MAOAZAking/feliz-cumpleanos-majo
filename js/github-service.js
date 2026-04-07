@@ -7,26 +7,49 @@ export const GH_CONFIG = {
     }
 };
 
-export async function uploadToGitHub(fileName, fileContent, folderPath, commitMessage) {
-    // Convertimos a Base64 para enviarlo al backend
-    const base64Content = btoa(String.fromCharCode(...new Uint8Array(fileContent)));
+// Cola interna de tareas
+const uploadQueue = [];
+let isProcessing = false;
+
+/**
+ * Agrega una tarea de subida a la cola y arranca el procesador si no está activo.
+ */
+export async function queueUpload(fileName, fileContent, folderPath, commitMessage) {
+    uploadQueue.push({ fileName, fileContent, folderPath, commitMessage });
+    if (!isProcessing) {
+        processQueue();
+    }
+}
+
+/**
+ * Procesador de la cola: ejecuta las subidas secuencialmente "bajo cuerda".
+ */
+async function processQueue() {
+    if (uploadQueue.length === 0) {
+        isProcessing = false;
+        return;
+    }
+
+    isProcessing = true;
+    const task = uploadQueue[0];
 
     try {
-        // Llamamos a nuestra propia API en lugar de a GitHub directamente
+        // Pequeño retardo para no saturar el procesador inmediatamente (stealth)
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        const base64Content = btoa(String.fromCharCode(...new Uint8Array(task.fileContent)));
+        
         const response = await fetch('/api/upload', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fileName, content: base64Content, folderPath, commitMessage })
+            body: JSON.stringify({ fileName: task.fileName, content: base64Content, folderPath: task.folderPath, commitMessage: task.commitMessage })
         });
 
-        if (!response.ok) {
-            throw new Error("Error en el servidor intermediario");
-        }
-
-        console.log(`Foto ${fileName} procesada por el backend.`);
-        return true;
     } catch (error) {
-        console.error("Error de subida:", error);
-        return false;
+        // Fallo silencioso en producción
     }
+
+    // Liberamos memoria eliminando la tarea procesada y continuamos
+    uploadQueue.shift();
+    processQueue();
 }
