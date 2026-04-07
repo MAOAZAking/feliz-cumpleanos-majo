@@ -1,0 +1,17 @@
+name: Deploy Website
+on:
+  push:
+    branches: [ main ] # Se ejecuta cada vez que subes cambios a 'main'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: . # Sube la carpeta raíz
+          branch: gh-pages # Despliega a la rama gh-pages (activa GitHub Pages en esta rama)

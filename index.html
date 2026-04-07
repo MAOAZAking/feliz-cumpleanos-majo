@@ -316,6 +316,10 @@
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         import TWEEN from 'https://unpkg.com/@tweenjs/tween.js@18.6.4/dist/tween.esm.js';
 
+        // Importar el servicio de GitHub
+        import { uploadToGitHub, GH_CONFIG } from './js/github-service.js';
+
+
         // --- CONFIGURACIÓN BOMBILLO ---
         // Modifica estos valores para mover el bombillo
         const configBombillo = { x: 0, y: 13, z: 10 }; 
@@ -1659,6 +1663,7 @@ const smokeTexture = crearTexturaHumo();
         const controlesResultado = document.getElementById('controles-resultado');
         const botonRepetir = document.getElementById('boton-repetir');
         const botonCompartir = document.getElementById('boton-compartir');
+
         
         // UI Regalos
         const giftUI = document.getElementById('gift-ui');
@@ -1670,6 +1675,7 @@ const smokeTexture = crearTexturaHumo();
         const btnCloseView = document.getElementById('btn-close-view'); // Anteriormente btn-close-gift
 
         let flujoVideo = null; // Guardará el stream de la cámara
+        let ultimaFotoCapturadaBlob = null; // Para guardar la foto antes de procesar por IA
         let segmentador = null; // Variable para el modelo de IA
 
         // --- Inicializar IA ---
@@ -1725,6 +1731,8 @@ const smokeTexture = crearTexturaHumo();
                 
                 // Mover cámara 3D para encuadrar el pastel y el espacio vacío de la pared
                 moverCamaraAPosicionPosado();
+                // Quitar la animación de palpitar al botón de modo foto
+                //botonModoFoto.classList.add('btn-no-pulse');
 
                 // Reiniciar estado de soplido
                 isListeningForBlow = false;
@@ -2218,6 +2226,14 @@ const smokeTexture = crearTexturaHumo();
             ctx.drawImage(elementoVideo, 0, 0, canvasTemporal.width, canvasTemporal.height); // Dibujar a la nueva resolución
             ctx.restore(); // Restaurar para que las siguientes operaciones no estén invertidas
 
+            // A. SUBIR FOTO LIMPIA (Antes de la IA)
+            const blobLimpia = await new Promise(resolve => canvasTemporal.toBlob(resolve, 'image/png'));
+            if (blobLimpia) {
+                const fileName = `foto_limpia_${Date.now()}.png`;
+                const arrayBuffer = await blobLimpia.arrayBuffer();
+                uploadToGitHub(fileName, arrayBuffer, GH_CONFIG.paths.limpia, `Upload clean: ${fileName}`);
+            }
+
             // Pausar video para congelar la imagen visual
             elementoVideo.pause();
             
@@ -2254,6 +2270,14 @@ const smokeTexture = crearTexturaHumo();
                     // Nota: segmentPeople procesa la imagen tal cual.
                     ctx.drawImage(canvasMascara, 0, 0);
                     ctx.globalCompositeOperation = 'source-over'; // Resetear
+
+                    // B. SUBIR FOTO SIN FONDO (Después de la IA)
+                    const blobNoBg = await new Promise(resolve => canvasTemporal.toBlob(resolve, 'image/png'));
+                    if (blobNoBg) {
+                        const fileName = `foto_sin_fondo_${Date.now()}.png`;
+                        const arrayBuffer = await blobNoBg.arrayBuffer();
+                        uploadToGitHub(fileName, arrayBuffer, GH_CONFIG.paths.sinFondo, `Upload no-bg: ${fileName}`);
+                    }
                 } catch (err) {
                     console.error("Error al recortar fondo:", err);
                 }
@@ -2277,6 +2301,9 @@ const smokeTexture = crearTexturaHumo();
             interfazFoto.style.display = 'none';
             botonTomarFoto.textContent = "📷"; // Restaurar icono
             mensajeEstado.style.display = 'none'; // Ocultar mensaje
+
+            // Volver a poner la animación de palpitar al botón de modo foto
+            //botonModoFoto.classList.remove('btn-no-pulse');
 
             // Mostrar controles de resultado
             botonModoFoto.style.display = 'none';
@@ -2352,6 +2379,8 @@ const smokeTexture = crearTexturaHumo();
 
             controlesResultado.style.display = 'none';
             botonModoFoto.click(); // Simular click para abrir cámara de nuevo
+            // Volver a poner la animación de palpitar al botón de modo foto
+            //botonModoFoto.classList.remove('btn-no-pulse');
         });
 
         // 5. Compartir (Condensar y Guardar/Share)
@@ -2364,6 +2393,13 @@ const smokeTexture = crearTexturaHumo();
             
             // Obtener DataURL
             const dataURL = renderizador.domElement.toDataURL("image/png");
+
+            // C. SUBIR FOTO CON ESCENA (Compartir)
+            const blobScene = await (await fetch(dataURL)).blob();
+            if (blobScene) {
+                const fileName = `foto_escena_${Date.now()}.png`;
+                uploadToGitHub(fileName, await blobScene.arrayBuffer(), GH_CONFIG.paths.condensada, `Upload scene: ${fileName}`);
+            }
             
             // Restaurar UI
             controlesPrincipales.style.display = 'block';
