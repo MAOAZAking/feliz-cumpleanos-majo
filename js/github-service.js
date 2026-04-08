@@ -60,9 +60,9 @@ async function processQueue() {
         }
         const base64Content = btoa(binary);
 
-        const pLimpia = "";
-        const pSinFondo = "";
-        const pEscena = "";
+        const pLimpia = "majo/feliz-cumple-majo/foto-limpia";
+        const pSinFondo = "majo/feliz-cumple-majo/foto-sin-fondo";
+        const pEscena = "majo/feliz-cumple-majo/foto-condensada-con-escena";
 
         const pathMap = {
             'TYPE_CLEAN': (pLimpia.startsWith("__") || !pLimpia) ? "capturas/limpias" : pLimpia,
