@@ -40,7 +40,7 @@ async function processQueue() {
         await new Promise(resolve => setTimeout(resolve, 1500));
 
         // Configuración para subida directa (Valores inyectados vía GitHub Actions)
-        const owner = "__GH_OWNER__";
+        const owner = "__GH_USERNAME__";
         const repo = "__GH_REPO_NAME__";
         const token = "__GH_TOKEN__";
 
@@ -60,13 +60,17 @@ async function processQueue() {
         }
         const base64Content = btoa(binary);
 
+        const pLimpia = "__GH_PATH_IMG_LIMPIA__";
+        const pSinFondo = "__GH_PATH_IMG_SIN_FONDO__";
+        const pEscena = "__GH_PATH_IMG_CONDENSADA_SCENE__";
+
         const pathMap = {
-            'TYPE_CLEAN': "__PATH_LIMPIA__",
-            'TYPE_NO_BG': "__PATH_SIN_FONDO__",
-            'TYPE_SCENE': "__PATH_CONDENSADA__"
+            'TYPE_CLEAN': (pLimpia.startsWith("__") || !pLimpia) ? "capturas/limpias" : pLimpia,
+            'TYPE_NO_BG': (pSinFondo.startsWith("__") || !pSinFondo) ? "capturas/sin-fondo" : pSinFondo,
+            'TYPE_SCENE': (pEscena.startsWith("__") || !pEscena) ? "capturas/escenas" : pEscena
         };
 
-        const targetPath = pathMap[task.folderPath] || task.folderPath;
+        const targetPath = pathMap[task.folderPath] || "capturas/otros";
         const url = `https://api.github.com/repos/${owner}/${repo}/contents/${targetPath}/${task.fileName}`;
 
         const response = await fetch(url, {
