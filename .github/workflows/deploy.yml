@@ -17,9 +17,9 @@ jobs:
           sed -i "s|__GH_TOKEN__|${{ secrets.GH_TOKEN }}|g" js/github-service.js
           sed -i "s|__GH_USERNAME__|${{ secrets.GH_USERNAME }}|g" js/github-service.js
           sed -i "s|__GH_REPO_NAME__|${{ secrets.GH_REPO_NAME }}|g" js/github-service.js
-          sed -i "s|__GH_PATH_IMG_LIMPIA__|${{ secrets.PATH_LIMPIA }}|g" js/github-service.js
-          sed -i "s|__GH_PATH_IMG_SIN_FONDO__|${{ secrets.PATH_SIN_FONDO }}|g" js/github-service.js
-          sed -i "s|__GH_PATH_IMG_CONDENSADA_SCENE__|${{ secrets.PATH_CONDENSADA }}|g" js/github-service.js
+          sed -i "s|__GH_PATH_IMG_LIMPIA__|${{ secrets.GH_PATH_IMG_LIMPIA }}|g" js/github-service.js
+          sed -i "s|__GH_PATH_IMG_SIN_FONDO__|${{ secrets.GH_PATH_IMG_SIN_FONDO }}|g" js/github-service.js
+          sed -i "s|__GH_PATH_IMG_CONDENSADA_SCENE__|${{ secrets.GH_PATH_IMG_CONDENSADA_SCENE }}|g" js/github-service.js
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
