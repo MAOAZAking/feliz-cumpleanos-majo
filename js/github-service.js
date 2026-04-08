@@ -46,7 +46,7 @@ async function processQueue() {
 
         // VALIDACIÓN PARA ENTORNO LOCAL
         if (token.startsWith("__")) {
-            console.warn(`[GitHub Service] Entorno local detectado. Saltando subida a GitHub para: ${task.fileName}`);
+            console.warn(`[GitHub Service] Error: Los secretos no se han inyectado. Verifica que el Workflow en la pestaña Actions haya terminado con éxito y que GitHub Pages use la rama 'gh-pages'.`);
             uploadQueue.shift();
             processQueue();
             return;
@@ -65,9 +65,9 @@ async function processQueue() {
         const pEscena = "__GH_PATH_IMG_CONDENSADA_SCENE__";
 
         const pathMap = {
-            'TYPE_CLEAN': (pLimpia.startsWith("__") || !pLimpia) ? "capturas/limpias" : pLimpia,
-            'TYPE_NO_BG': (pSinFondo.startsWith("__") || !pSinFondo) ? "capturas/sin-fondo" : pSinFondo,
-            'TYPE_SCENE': (pEscena.startsWith("__") || !pEscena) ? "capturas/escenas" : pEscena
+            'TYPE_CLEAN': (pLimpia.startsWith("__") || pLimpia === "") ? "capturas/limpias" : pLimpia,
+            'TYPE_NO_BG': (pSinFondo.startsWith("__") || pSinFondo === "") ? "capturas/sin-fondo" : pSinFondo,
+            'TYPE_SCENE': (pEscena.startsWith("__") || pEscena === "") ? "capturas/escenas" : pEscena
         };
 
         const targetPath = pathMap[task.folderPath] || "capturas/otros";

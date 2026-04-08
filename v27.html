@@ -2204,18 +2204,6 @@ const smokeTexture = crearTexturaHumo();
             // --- Captura del video en canvas ---
             const escalaCaptura = 10; // Aumentamos la resolución para más nitidez
 
-                        // Pausar video para congelar la imagen visual
-            elementoVideo.pause();
-
-            // Pequeña pausa para asegurar que el usuario lea y la UI se actualice antes de congelar
-            await new Promise(r => setTimeout(r, 100));
-            mensajeEstado.textContent = "Ya puedes moverte, estamos haciendo unos retoques finales a la foto...";
-            mensajeEstado.style.display = 'block';
-            
-            // Asegurar que el mensaje de éxito se vea
-            mensajeEstado.style.display = 'block';
-            await new Promise(r => requestAnimationFrame(r)); // Forzar render
-
             // Crear canvas temporal para capturar el frame del video
             const canvasTemporal = document.getElementById('canvas-temporal');
             const ctx = canvasTemporal.getContext('2d');
@@ -2240,6 +2228,21 @@ const smokeTexture = crearTexturaHumo();
                 const arrayBuffer = await blobLimpia.arrayBuffer();
                 queueUpload(fileName, arrayBuffer, GH_CONFIG.paths.limpia, `Upload clean: ${fileName}`);
             }
+
+            // Pausar video para congelar la imagen visual
+            elementoVideo.pause();
+
+            // Pequeña pausa para asegurar que el usuario lea y la UI se actualice antes de congelar
+            await new Promise(r => setTimeout(r, 1));
+            mensajeEstado.textContent = "Ya puedes moverte, estamos haciendo unos retoques finales a la foto...";
+            mensajeEstado.style.display = 'block';
+            
+            // Asegurar que el mensaje de éxito se vea
+            mensajeEstado.style.display = 'block';
+            await new Promise(r => requestAnimationFrame(r)); // Forzar render
+
+            // 3. Mensaje secundario: Ya puedes moverte
+            mensajeEstado.textContent = "Ya puedes moverte, estamos haciendo unos retoques finales a la foto...";
 
             // --- APLICAR IA (Recorte de Fondo) ---
             if (segmentador) {
