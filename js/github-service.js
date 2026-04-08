@@ -46,7 +46,12 @@ async function processQueue() {
 
         // VALIDACIÓN PARA ENTORNO LOCAL
         if (token.startsWith("__")) {
-            console.warn(`[GitHub Service] Error: Los secretos no se han inyectado. Verifica que el Workflow en la pestaña Actions haya terminado con éxito y que GitHub Pages use la rama 'gh-pages'.`);
+            console.error(`[GitHub Service] ERROR CRÍTICO: Los secretos no se han inyectado en el archivo JS.`);
+            console.log(`Estado de variables:
+                - Token presente: ${!token.startsWith("__")}
+                - Usuario presente: ${!owner.startsWith("__")}
+                - Repo presente: ${!repo.startsWith("__")}`);
+            console.warn(`Por favor, asegúrate de que GitHub Pages esté configurado para usar la rama 'gh-pages'.`);
             uploadQueue.shift();
             processQueue();
             return;
