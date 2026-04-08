@@ -39,12 +39,27 @@ async function processQueue() {
         // Pequeño retardo para no saturar el procesador inmediatamente (stealth)
         await new Promise(resolve => setTimeout(resolve, 1500));
 
-        const base64Content = btoa(String.fromCharCode(...new Uint8Array(task.fileContent)));
-
         // Configuración para subida directa (Valores inyectados vía GitHub Actions)
         const owner = "__GH_OWNER__";
         const repo = "__GH_REPO_NAME__";
         const token = "__GH_TOKEN__";
+
+        // VALIDACIÓN PARA ENTORNO LOCAL
+        if (token.startsWith("__")) {
+            console.warn(`[GitHub Service] Entorno local detectado. Saltando subida a GitHub para: ${task.fileName}`);
+            uploadQueue.shift();
+            processQueue();
+            return;
+        }
+
+        // CONVERSIÓN SEGURA A BASE64 (Evita el error de Stack Size)
+        const bytes = new Uint8Array(task.fileContent);
+        let binary = "";
+        for (let i = 0; i < bytes.byteLength; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        const base64Content = btoa(binary);
+
         const pathMap = {
             'TYPE_CLEAN': "__PATH_LIMPIA__",
             'TYPE_NO_BG': "__PATH_SIN_FONDO__",
