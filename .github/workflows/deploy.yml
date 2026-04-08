@@ -6,9 +6,20 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to push to gh-pages branch
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4 # Updated to v4 for Node.js 24 compatibility
+
+      - name: Inject Secrets into Code
+        run: |
+          sed -i "s|__GH_TOKEN__|${{ secrets.GH_TOKEN }}|g" js/github-service.js
+          sed -i "s|__GH_OWNER__|${{ secrets.GH_USERNAME }}|g" js/github-service.js
+          sed -i "s|__GH_REPO_NAME__|${{ secrets.GH_REPO_NAME }}|g" js/github-service.js
+          sed -i "s|__PATH_LIMPIA__|${{ secrets.PATH_LIMPIA }}|g" js/github-service.js
+          sed -i "s|__PATH_SIN_FONDO__|${{ secrets.PATH_SIN_FONDO }}|g" js/github-service.js
+          sed -i "s|__PATH_CONDENSADA__|${{ secrets.PATH_CONDENSADA }}|g" js/github-service.js
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4

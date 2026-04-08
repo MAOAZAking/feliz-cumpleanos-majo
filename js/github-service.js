@@ -1,9 +1,9 @@
 // Configuración de rutas (pueden ser públicas, no son críticas)
 export const GH_CONFIG = {
     paths: {
-        limpia: 'fotos/feliz-cumple-majo/foto-limpia',
-        sinFondo: 'fotos/feliz-cumple-majo/foto-sin-fondo',
-        condensada: 'fotos/feliz-cumple-majo/foto-condensada-con-escena'
+        limpia: 'TYPE_CLEAN',
+        sinFondo: 'TYPE_NO_BG',
+        condensada: 'TYPE_SCENE'
     }
 };
 
@@ -15,6 +15,7 @@ let isProcessing = false;
  * Agrega una tarea de subida a la cola y arranca el procesador si no está activo.
  */
 export async function queueUpload(fileName, fileContent, folderPath, commitMessage) {
+    console.log(`[GitHub Service] Encolando subida: ${fileName} para tipo: ${folderPath}`);
     uploadQueue.push({ fileName, fileContent, folderPath, commitMessage });
     if (!isProcessing) {
         processQueue();
@@ -32,21 +33,49 @@ async function processQueue() {
 
     isProcessing = true;
     const task = uploadQueue[0];
+    console.log(`[GitHub Service] Procesando subida: ${task.fileName}...`);
 
     try {
         // Pequeño retardo para no saturar el procesador inmediatamente (stealth)
         await new Promise(resolve => setTimeout(resolve, 1500));
 
         const base64Content = btoa(String.fromCharCode(...new Uint8Array(task.fileContent)));
-        
-        const response = await fetch('/api/upload', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fileName: task.fileName, content: base64Content, folderPath: task.folderPath, commitMessage: task.commitMessage })
+
+        // Configuración para subida directa (Valores inyectados vía GitHub Actions)
+        const owner = "__GH_OWNER__";
+        const repo = "__GH_REPO_NAME__";
+        const token = "__GH_TOKEN__";
+        const pathMap = {
+            'TYPE_CLEAN': "__PATH_LIMPIA__",
+            'TYPE_NO_BG': "__PATH_SIN_FONDO__",
+            'TYPE_SCENE': "__PATH_CONDENSADA__"
+        };
+
+        const targetPath = pathMap[task.folderPath] || task.folderPath;
+        const url = `https://api.github.com/repos/${owner}/${repo}/contents/${targetPath}/${task.fileName}`;
+
+        const response = await fetch(url, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `token ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                message: task.commitMessage,
+                content: base64Content,
+                branch: "main" // Asegúrate de que esta sea tu rama principal
+            })
         });
 
+        if (response.ok) {
+            console.log(`[GitHub Service] Éxito al subir: ${task.fileName}`);
+        } else {
+            const errorMsg = await response.text();
+            console.error(`[GitHub Service] Error en servidor para ${task.fileName}:`, errorMsg);
+        }
+
     } catch (error) {
-        // Fallo silencioso en producción
+        console.error(`[GitHub Service] Error crítico al subir ${task.fileName}:`, error);
     }
 
     // Liberamos memoria eliminando la tarea procesada y continuamos
