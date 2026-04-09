@@ -703,7 +703,6 @@
         
         // Lógica para ocultar el tutorial al interactuar
         controles.addEventListener('start', () => {
-            usuarioInteractuo = true; // Marcamos que el usuario ya sabe mover la cámara
             const hint = document.getElementById('tutorial-hint');
             tutorialActivo = false;
             if (hint && hint.style.display !== 'none') {
@@ -979,15 +978,13 @@
         let iaCargada = false;
 
         function actualizarGlobos(tiempo) {
-            globosAnimados.forEach(g => {
-                // Solo animamos el "flote" en PC para ahorrar batería/recursos en móvil
-                if (!isMobile) {
-                    g.grupo.position.y = g.yInicial + Math.sin(tiempo + g.xOffset) * 0.5;
-                    g.grupo.rotation.z = Math.sin(tiempo * 0.5) * 0.05;
-                }
+            // OPTIMIZACIÓN: En móvil no animamos el movimiento sutil de los globos
+            if (isMobile) return;
 
-                // La cuerda debe actualizar su posición SIEMPRE (al menos una vez) 
-                // para que no aparezca en el centro de la escena
+            globosAnimados.forEach(g => {
+                g.grupo.position.y = g.yInicial + Math.sin(tiempo + g.xOffset) * 0.5;
+                g.grupo.rotation.z = Math.sin(tiempo * 0.5) * 0.05;
+
                 if (g.cuerda && g.target) {
                     const posNudo = g.grupo.position.clone();
                     posNudo.y -= 1.5;
@@ -1452,7 +1449,7 @@
                                 // Capturamos el ángulo del centro para usarlo como base
                                 anguloTutorialBase = controles.getAzimuthalAngle();
                                 
-                                const leftAngle = anguloTutorialBase - 0.08;
+                                const leftAngle = anguloTutorialBase + 0.08;
                                 const targetPos = new THREE.Vector3(
                                     Math.sin(leftAngle) * 15,
                                     5,
@@ -1460,8 +1457,6 @@
                                 );
                                 // Animamos la cámara suavemente al punto de inicio (izquierda)
                                 animarCamara(targetPos, controles.target, () => {
-                                    // Volvemos a verificar por si interactuó durante la animación de la cámara
-                                    if (usuarioInteractuo) return;
                                     // Una vez en posición, mostramos el tutorial y grabamos el tiempo
                                     mostrarTutorial();
                                 });
@@ -1476,8 +1471,6 @@
         }
 
         function mostrarTutorial() {
-            if (usuarioInteractuo) return; // No mostrar si el usuario ya tomó el control
-
             const hint = document.getElementById('tutorial-hint');
             if (hint) {
                 hint.style.display = 'flex';
@@ -2095,7 +2088,6 @@ const smokeTexture = crearTexturaHumo();
         let tutorialActivo = false;
         let anguloTutorialBase = 0;
         let startTimeTutorial = 0;
-        let usuarioInteractuo = false;
 
 
         // --- Inicializar IA ---
@@ -2858,19 +2850,19 @@ const smokeTexture = crearTexturaHumo();
             // --- Lógica de Tutorial Interactivo (Dispositivos que no sean celular) ---
             if (tutorialActivo && !isMobile) {
                 const t = ((Date.now() - startTimeTutorial) / 1000) % 10; 
-                let offset = -0.08; // Empezamos en el mismo punto donde terminó la animación inicial (+0.08)
+                let offset = 0.08; // Empezamos en el mismo punto donde terminó la animación inicial (+0.08)
 
                 if (t >= 1.0 && t <= 4.0) {
                     // Barrido fluido: De lado inicial a lado opuesto (0.08 a -0.08)
                     const norm = (t - 1.0) / 3.0;
-                    offset = -0.08 * Math.cos(norm * Math.PI);
+                    offset = 0.08 * Math.cos(norm * Math.PI);
                 } else if (t > 4.0 && t < 6.5) {
                     // Pausa en el extremo opuesto (-0.08)
-                    offset = 0.08;
+                    offset = -0.08;
                 } else if (t >= 6.5 && t <= 9.5) {
                     // Barrido fluido: Regreso al punto inicial (-0.08 a 0.08)
                     const norm = (t - 6.5) / 3.0;
-                    offset = 0.08 * Math.cos(norm * Math.PI);
+                    offset = -0.08 * Math.cos(norm * Math.PI);
                 }
                 // El resto del tiempo la cámara espera en el punto inicial (+0.08)
 
