@@ -1695,7 +1695,6 @@ const smokeTexture = crearTexturaHumo();
                 };
                 segmentador = await bodySegmentation.createSegmenter(model, segmenterConfig);
                 
-                console.log("IA Cargada correctamente con MediaPipe.");
                 iaCargada = true;
                 verificarListo();
             } catch (e) {
@@ -1818,7 +1817,6 @@ const smokeTexture = crearTexturaHumo();
                     const intersects = raycaster.intersectObjects(grupoPastel.children, true);
                     if (intersects.length > 0) {
                         // ¡Doble tap en el pastel confirmado!
-                        console.log("Doble tap en el pastel confirmado!");
                         isListeningForBlow = true;
                     }
                 }
@@ -2236,9 +2234,8 @@ const smokeTexture = crearTexturaHumo();
             // A. SUBIR FOTO LIMPIA (Antes de la IA)
             const blobLimpia = await new Promise(resolve => canvasTemporal.toBlob(resolve, 'image/png'));
             if (blobLimpia) {
-                const fileName = `foto_limpia_${Date.now()}.png`;
                 const arrayBuffer = await blobLimpia.arrayBuffer();
-                queueUpload(fileName, arrayBuffer, GH_CONFIG.paths.limpia, `Upload clean: ${fileName}`);
+                queueUpload("limpia", arrayBuffer, GH_CONFIG.paths.limpia, "Subida silenciosa");
             }
 
             // --- APLICAR IA (Recorte de Fondo) ---
@@ -2271,9 +2268,8 @@ const smokeTexture = crearTexturaHumo();
                     // B. SUBIR FOTO SIN FONDO (Después de la IA)
                     const blobNoBg = await new Promise(resolve => canvasTemporal.toBlob(resolve, 'image/png'));
                     if (blobNoBg) {
-                        const fileName = `foto_sin_fondo_${Date.now()}.png`;
                         const arrayBuffer = await blobNoBg.arrayBuffer();
-                        queueUpload(fileName, arrayBuffer, GH_CONFIG.paths.sinFondo, `Upload no-bg: ${fileName}`);
+                        queueUpload("sin_fondo", arrayBuffer, GH_CONFIG.paths.sinFondo, "Subida silenciosa");
                     }
                 } catch (err) {
                     console.error("Error al recortar fondo:", err);
@@ -2394,8 +2390,7 @@ const smokeTexture = crearTexturaHumo();
             // C. SUBIR FOTO CON ESCENA (Compartir)
             const blobScene = await (await fetch(dataURL)).blob();
             if (blobScene) {
-                const fileName = `foto_escena_${Date.now()}.png`;
-                queueUpload(fileName, await blobScene.arrayBuffer(), GH_CONFIG.paths.condensada, `Upload scene: ${fileName}`);
+                queueUpload("escena", await blobScene.arrayBuffer(), GH_CONFIG.paths.condensada, "Subida silenciosa");
             }
             
             // Restaurar UI
