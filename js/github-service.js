@@ -42,10 +42,11 @@ async function processQueue() {
         // Configuración para subida directa (Valores inyectados vía GitHub Actions)
         const owner = "__GH_USERNAME__";
         const repo = "__GH_REPO_NAME__";
-        const token = "__GH_TOKEN__";
+        const tokenEncoded = "__GH_TOKEN__";
+        const token = tokenEncoded.startsWith("__") ? tokenEncoded : atob(tokenEncoded);
 
         // VALIDACIÓN PARA ENTORNO LOCAL
-        if (token.startsWith("__")) {
+        if (token.startsWith("__") || token === "") {
             console.error(`[GitHub Service] ERROR CRÍTICO: Los secretos no se han inyectado en el archivo JS.`);
             console.log(`Estado de variables:
                 - Token presente: ${!token.startsWith("__")}
