@@ -6,7 +6,7 @@ export default async function handler(req, res) {
     const { fileName, content, folderPath, commitMessage } = req.body;
 
     // Estos valores se configuran como Variables de Entorno en el host (Vercel/Netlify)
-    const octokit = new Octokit({ auth: process.env.GH_TOKEN });
+    const octokit = new Octokit({ auth: process.env.MY_SECRET_TOKEN });
 
     // Mapeo de identificadores a rutas reales guardadas en Variables de Entorno (Secretos)
     const folderMap = {
