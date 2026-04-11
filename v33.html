@@ -647,7 +647,8 @@
     <!-- Tutorial de Velas (Se activa tras tomar la foto) -->
     <div id="hint-velas">
         <div class="hint-velas-content">
-            😍¡Wow quedó muy bonita la foto!😍 Pero se te olvido una cosita🤭🫣... <br><br> Toca en repetir foto
+            ¡Quedó muy bien la foto! Pero no apagaste las velas... <br><br>
+            Toca 2 veces el pastel y sopla para ver tus regalos 🎂💨
         </div>
     </div>
 
@@ -1481,14 +1482,48 @@
                     loadingScreen.classList.add('eyes-open');
                     setTimeout(() => { 
                         loadingScreen.style.opacity = 0; 
-                        // Esperamos 3 segundos y mostramos el tutorial desde donde esté la cámara
-                        setTimeout(() => {
-                            if (!usuarioInteractuo) {
-                                mostrarTutorial();
-                            }
-                        }, isMobile ? 1000 : 3000);
+                        if (!isMobile) {
+                            // En PC: Esperamos 3 segundos con los ojos abiertos y hacemos el paneo inicial
+                            setTimeout(() => {
+                                // Capturamos el ángulo del centro para usarlo como base
+                                anguloTutorialBase = controles.getAzimuthalAngle();
+                                
+                                const leftAngle = anguloTutorialBase - 0.08;
+                                const targetPos = new THREE.Vector3(
+                                    Math.sin(leftAngle) * 15,
+                                    5,
+                                    Math.cos(leftAngle) * 15
+                                );
+                                // Animamos la cámara suavemente al punto de inicio (izquierda)
+                                animarCamara(targetPos, controles.target, () => {
+                                    // Volvemos a verificar por si interactuó durante la animación de la cámara
+                                    if (usuarioInteractuo) return;
+                                    // Una vez en posición, mostramos el tutorial y grabamos el tiempo
+                                    mostrarTutorial();
+                                });
+                            }, 3000);
+                        } else {
+                            // En móvil: Mostramos el tutorial directamente sin esperas ni movimientos
+                            mostrarTutorial();
+                        }
                     }, 2500);
                 }
+            }
+        }
+
+        function mostrarTutorial() {
+            if (usuarioInteractuo) return; // No mostrar si el usuario ya tomó el control
+
+            const hint = document.getElementById('tutorial-hint');
+            if (hint) {
+                hint.style.display = 'flex';
+                if (!isMobile) {
+                    tutorialActivo = true;
+                    startTimeTutorial = Date.now();
+                }
+                
+                // Pequeño delay para que la transición de opacidad funcione
+                setTimeout(() => { hint.style.opacity = 1; }, 100);
             }
         }
 
@@ -2096,85 +2131,6 @@ const smokeTexture = crearTexturaHumo();
         let tutorialActivo = false;
         let anguloTutorialBase = 0;
         let startTimeTutorial = 0;
-        let tutorialCamPos = new THREE.Vector3();
-
-        // Función auxiliar para reiniciar el tiempo de la animación CSS 100%
-        function reiniciarAnimacionesCSS(hintElement) {
-            const oldHand = hintElement.querySelector('.hand-animation');
-            if (oldHand) {
-                const newHand = oldHand.cloneNode(true);
-                oldHand.parentNode.replaceChild(newHand, oldHand);
-            }
-        }
-
-        function mostrarTutorial() {
-            if (usuarioInteractuo) return;
-
-            if (!isMobile) {
-                // En PC, prepararBaseTutorial hace el movimiento previo y luego lo muestra
-                prepararBaseTutorial();
-            } else {
-                // En móvil solo lo mostramos
-                const hint = document.getElementById('tutorial-hint');
-                if (hint) {
-                    reiniciarAnimacionesCSS(hint);
-                    hint.style.display = 'flex';
-                    setTimeout(() => { hint.style.opacity = 1; }, 100);
-                }
-            }
-        }
-
-        // Captura dinámicamente el estado actual para que el tutorial sea relativo
-        function prepararBaseTutorial() {
-            if (usuarioInteractuo || tutorialActivo) return;
-
-            // Ocultamos el tutorial si estaba visible para que no se cruce
-            const hint = document.getElementById('tutorial-hint');
-            if (hint) {
-                hint.style.opacity = 0;
-                hint.style.display = 'none';
-            }
-
-            controles.update();
-            const baseAzimuth = controles.getAzimuthalAngle();
-            
-            const dx = camara.position.x - controles.target.x;
-            const dz = camara.position.z - controles.target.z;
-            const dist = Math.sqrt(dx * dx + dz * dz);
-            const y = camara.position.y;
-
-            const inversion = (camara.position.z < 0) ? -1 : 1;
-            const targetStartOffset = -0.08 * inversion;
-            
-            const targetStartPos = new THREE.Vector3(
-                controles.target.x + Math.sin(baseAzimuth + targetStartOffset) * dist,
-                y,
-                controles.target.z + Math.cos(baseAzimuth + targetStartOffset) * dist
-            );
-
-            // Movemos la cámara suavemente al punto de inicio del barrido
-            animarCamara(targetStartPos, controles.target, () => {
-                if (usuarioInteractuo) return;
-                
-                // Fijamos valores y empezamos la oscilación 3D
-                anguloTutorialBase = baseAzimuth;
-                tutorialDistance = dist;
-                tutorialY = y;
-                inversionTutorial = inversion;
-                startTimeTutorial = Date.now();
-                tutorialActivo = true;
-
-                // AHORA SÍ: Reiniciamos la animación CSS y mostramos justo a tiempo
-                if (hint) {
-                    reiniciarAnimacionesCSS(hint);
-                    hint.style.display = 'flex';
-                    setTimeout(() => { hint.style.opacity = 1; }, 50);
-                }
-            });
-        }
-        let tutorialDistance = 15;
-        let tutorialY = 5;
-        let inversionTutorial = 1;
         let usuarioInteractuo = false;
 
 
@@ -2211,33 +2167,32 @@ const smokeTexture = crearTexturaHumo();
         // 1. Abrir Modo Foto
         botonModoFoto.addEventListener('click', async () => {
             try {
-                // Apagar tutorial visual inmediatamente
-                tutorialActivo = false;
-                const hint = document.getElementById('tutorial-hint');
-                if (hint) {
-                    hint.style.opacity = 0;
-                    hint.style.display = 'none';
-                }
-
+                // Optimización: Cargar IA solo si no está lista
                 if (!segmentador) {
                     mensajeEstado.textContent = "Iniciando sistema de cámara inteligente...";
                     mensajeEstado.style.display = 'block';
                     await cargarIA();
                 }
-                
+                // Solo pedimos acceso si no tenemos un stream activo
+                // Pedi permisos de AUDIO también para la función secreta
                 if (!flujoVideo) {
                     flujoVideo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true });
-                    elementoVideo.srcObject = flujoVideo; 
+                    elementoVideo.srcObject = flujoVideo; // El video ignorará la pista de audio
                 }
-                elementoVideo.play(); 
+                elementoVideo.play(); // Aseguramos que se reproduzca si estaba pausado
                 interfazFoto.style.display = 'block';
                 mensajeEstado.style.display = 'none';
-                botonModoFoto.style.display = 'none'; 
+                botonModoFoto.style.display = 'none'; // Ocultar botón principal
                 
-                // Llamamos a mover cámara (el tutorial de 3 segundos se lanzará internamente cuando llegue)
+                // Mover cámara 3D para encuadrar el pastel y el espacio vacío de la pared
                 moverCamaraAPosicionPosado();
-                
+                // Quitar la animación de palpitar al botón de modo foto
+                //botonModoFoto.classList.add('btn-no-pulse');
+
+                // Reiniciar estado de soplido
                 isListeningForBlow = false;
+                
+                // Iniciar detección de soplido
                 iniciarEscuchaSecreta();
 
             } catch (err) {
@@ -2249,26 +2204,8 @@ const smokeTexture = crearTexturaHumo();
         let audioContext, analyser, microphone;
         let isListeningForBlow = false;
         let lastTapTime = 0;
-        let pasoTutorialVelas = 0; // NUEVO: Controla la fase del tutorial post-foto
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
-
-        // NUEVO: Función para actualizar el mensaje del tutorial en pantalla
-        function actualizarMensajeTutorial(mensaje, duracion = 0) {
-            const hint = document.getElementById('hint-velas');
-            const content = hint.querySelector('.hint-velas-content');
-            if (content && hint) {
-                content.innerHTML = mensaje;
-                hint.style.display = 'block';
-                setTimeout(() => { hint.style.opacity = 1; }, 50);
-
-                if (duracion > 0) {
-                    setTimeout(() => {
-                        ocultarHintVelas();
-                    }, duracion);
-                }
-            }
-        }
 
         function iniciarEscuchaSecreta() {
             if (flujoVideo) {
@@ -2308,7 +2245,7 @@ const smokeTexture = crearTexturaHumo();
             const average = sum / bufferLength;
 
             // Umbral de volumen BAJADO para facilitar detección (antes 45)
-            if (average > 37) {
+            if (average > 10) {
                 apagarVelasYActivarRegalo();
             }
 
@@ -2333,58 +2270,19 @@ const smokeTexture = crearTexturaHumo();
             if (interfazFoto.style.display !== 'none') {
                 if (timeDiff < 400 && timeDiff > 0) {
                     // Intersectar con el grupo del pastel
-                    // Intersectar con el grupo del pastel
                     const intersects = raycaster.intersectObjects(grupoPastel.children, true);
                     if (intersects.length > 0) {
-                        // --- LÓGICA DE SOPLIDO ---
-                        
-                        if (pasoTutorialVelas === 2) {
-                            // MODO TUTORIAL: Solo ocurre la primera vez después de la foto
-                            pasoTutorialVelas = 3; 
-                            isListeningForBlow = false; // Bloqueado momentáneamente para el deseo
-
-                            actualizarMensajeTutorial("Antes que nada pide un deseo, pero shhh 🤫 no lo digas.");
-
-                            setTimeout(() => {
-                                if (pasoTutorialVelas !== 3) return;
-                                actualizarMensajeTutorial("<center>¿Lista?🤔</center>");
-
-                                setTimeout(() => {
-                                    if (pasoTutorialVelas !== 3) return;
-                                    actualizarMensajeTutorial("ahora si sopla muy fuerte 💨...");
-
-                                    setTimeout(() => {
-                                        if (pasoTutorialVelas !== 3) return;
-                                        isListeningForBlow = true; 
-                                        console.log("Micrófono activado (Tutorial)");
-                                    }, 2000);
-                                }, 4000);
-                            }, 7000);
-
-                        } else {
-                            // MODO EXPERTO: Si ya sabe qué hacer o el tutorial ya pasó
-                            isListeningForBlow = true; 
-                            console.log("Micrófono activado inmediatamente (Modo Experto)");
-                            
-                            // Si ya completó el tutorial una vez, le damos un mensaje rápido de feedback
-                            if (pasoTutorialVelas >= 6) {
-                                actualizarMensajeTutorial("¡Sopla fuerte! 💨", 2000);
-                            }
-                        }
+                        // ¡Doble tap en el pastel confirmado!
+                        isListeningForBlow = true;
                     }
                 }
-            }
+            } 
             else if (giftMode === 'pile') {
                 // Requerimos doble toque para evitar conflicto con la rotación 3D
                 if (timeDiff < 400 && timeDiff > 0) {
                     const intersects = raycaster.intersectObjects(giftGroup.children, true);
                     if (intersects.length > 0) {
                         // Start viewing gifts
-                        // Avanzar tutorial al Paso 5 (Fin)
-                        if (pasoTutorialVelas === 4) {
-                            pasoTutorialVelas = 6; // 6 significa terminado
-                            actualizarMensajeTutorial("Perfecto ya sabes ahora como ver los regalos cuando quieras", 7000);
-                        }
                         enterGiftView(0); // Start with first gift (Rose)
                     }
                 }
@@ -2432,13 +2330,7 @@ const smokeTexture = crearTexturaHumo();
             if (!isListeningForBlow) return;
             isListeningForBlow = false; // Desactivar para no disparar múltiple
 
-            // Avanzar tutorial al Paso 4
-            if (pasoTutorialVelas === 3) {
-                pasoTutorialVelas = 4;
-                actualizarMensajeTutorial("Urra ya apagaste las velas 🕯️<br> Ahora para mirar bien los regalos <br> Toca 2 veces en los regalos 🎁...");
-            } else {
-                ocultarHintVelas();
-            }
+            ocultarHintVelas(); // Ocultar el mensaje tutorial inmediatamente
 
             // 1. Apagar luces y ocultar llamas
             candleLights.forEach(l => l.intensity = 0);
@@ -2877,15 +2769,9 @@ const smokeTexture = crearTexturaHumo();
         function mostrarHintVelas() {
             // Solo si las velas están prendidas (intensidad > 0)
             if (candleLights.length > 0 && candleLights[0].intensity > 0) {
-                if (pasoTutorialVelas === 0) {
-                    pasoTutorialVelas = 1;
-                    actualizarMensajeTutorial("¡Wow quedó muy bonita la foto!😍 Pero se te olvido una cosita🤭🫣 <br><br> <b style='color: black !important, animation: palpitar 1s infinite; transition: transform 0.2s, background 0.2s; text-transform: uppercase; text-shadow: 0 0 5px #000000, 0 0 10px #000000, 0 0 20px #000000 !important;'>TOCA EN REPETIR FOTO</b>");
-                } else if (pasoTutorialVelas < 6) {
-                    // Si ya está en medio del tutorial, solo asegurarnos de que sea visible
-                    const hint = document.getElementById('hint-velas');
-                    hint.style.display = 'block';
-                    setTimeout(() => { hint.style.opacity = 1; }, 100);
-                }
+                const hint = document.getElementById('hint-velas');
+                hint.style.display = 'block';
+                setTimeout(() => { hint.style.opacity = 1; }, 100);
             }
         }
 
@@ -2898,44 +2784,37 @@ const smokeTexture = crearTexturaHumo();
         }
 
         function moverCamaraAPosicionPosado() {
+            // Perspectiva "desde la pared":
+            // La cámara se posiciona a la altura de la foto (y=-1) y mira hacia el pastel (y=-3)
+            // Se coloca en z=-18 para estar detrás del pastel (z=-12) pero delante de la pared (z=-19.9)
+            // Corregimos la altura (y=-1) para que no quede bajo el suelo y la vista (y=-3)
             animarCamara(new THREE.Vector3(0, -1, -19), new THREE.Vector3(0, -1, 0), () => {
+                // Una vez que la cámara llega, aplicamos el mismo estilo de control que la cámara principal.
                 controles.minAzimuthAngle = -Infinity;
                 controles.maxAzimuthAngle = Infinity;
                 controles.minPolarAngle = 0;
-                controles.maxPolarAngle = Math.PI; 
+                controles.maxPolarAngle = Math.PI; // Permitir mirar hasta arriba de nuevo
                 controles.enableZoom = false;
-                controles.rotateSpeed = -0.5; 
+                controles.rotateSpeed = -0.5; // Usar el modo "mirar alrededor" (drag to look)
                 controles.update();
-                
-                // Esperar 3 segundos antes de iniciar el tutorial si no ha tocado la pantalla
-                setTimeout(() => {
-                    if (!usuarioInteractuo && interfazFoto.style.display !== 'none') {
-                        mostrarTutorial();
-                    }
-                }, 3000);
             });
         }
 
         function moverCamaraAFrente() {
+            // Restaurar los controles a sus valores por defecto
             controles.minAzimuthAngle = -Infinity;
             controles.maxAzimuthAngle = Infinity;
             controles.minPolarAngle = 0;
-            controles.maxPolarAngle = Math.PI; 
+            controles.maxPolarAngle = Math.PI; // Permitir mirar arriba de nuevo
             controles.enableZoom = false;
-            controles.rotateSpeed = -0.5; 
+            controles.rotateSpeed = -0.5; // Volver al modo "mirar alrededor"
 
-            animarCamara(new THREE.Vector3(0, 5, 15), new THREE.Vector3(0, 5, 14), () => {
-                // Esperar 3 segundos al volver al inicio
-                setTimeout(() => {
-                    if (!usuarioInteractuo && interfazFoto.style.display === 'none') {
-                        mostrarTutorial();
-                    }
-                }, 3000);
-            });
+            // Volver a la posición central mirando al frente
+            animarCamara(new THREE.Vector3(0, 5, 15), new THREE.Vector3(0, 5, 14));
         }
 
         function animarCamara(posicionDestino, mirarA, alCompletar) {
-            tutorialActivo = false; // Pausar cualquier tutorial durante movimientos automáticos
+            // Animación simple
             let alpha = 0;
             const posInicial = camara.position.clone();
             const objetivoInicial = controles.target.clone();
@@ -2969,16 +2848,12 @@ const smokeTexture = crearTexturaHumo();
             mallaFoto.material.opacity = 0;
             mallaFoto.material.needsUpdate = true;
 
-            // Avanzar tutorial al Paso 2
-            if (pasoTutorialVelas === 1) {
-                pasoTutorialVelas = 2;
-                actualizarMensajeTutorial("Toca 2 veces rapido en el pastel 🎂...");
-            } else {
-                ocultarHintVelas(); // Limpiar el mensaje si ya pasó esa etapa
-            }
+            ocultarHintVelas(); // Limpiar el mensaje si decide repetir la foto
 
             controlesResultado.style.display = 'none';
             botonModoFoto.click(); // Simular click para abrir cámara de nuevo
+            // Volver a poner la animación de palpitar al botón de modo foto
+            //botonModoFoto.classList.remove('btn-no-pulse');
         });
 
         // 5. Compartir (Condensar y Guardar/Share)
@@ -3042,36 +2917,25 @@ const smokeTexture = crearTexturaHumo();
             
             // --- Lógica de Tutorial Interactivo (Dispositivos que no sean celular) ---
             if (tutorialActivo && !isMobile) {
-                const t = ((Date.now() - startTimeTutorial) / 1000) % 10; // Ciclo sincronizado con los 10s del CSS
+                const t = ((Date.now() - startTimeTutorial) / 1000) % 10; 
+                let offset = -0.08; // Empezamos en el mismo punto donde terminó la animación inicial (+0.08)
 
-                // Cronología sincronizada con handDrag (CSS):
-                // 0s - 1.5s: Emoji aparece y hace click en la izquierda (Cámara quieta en -0.08)
-                // 1.5s - 4.0s: Emoji arrastra hacia la derecha (Cámara barre de -0.08 a 0.08)
-                // 4.0s - 7.0s: Pausa en la derecha, emoji desaparece y reaparece (Cámara quieta en 0.08)
-                // 7.0s - 9.5s: Emoji arrastra hacia la izquierda (Cámara barre de 0.08 a -0.08)
-                // 9.5s - 10s: Emoji desaparece (Cámara quieta en -0.08)
-
-                let offset = -0.08;
-                if (t >= 1.0 && t <= 2.5) {
+                if (t >= 1.0 && t <= 4.0) {
                     // Barrido fluido: De lado inicial a lado opuesto (0.08 a -0.08)
-                    const norm = (t - 1.0) / 1.5;
+                    const norm = (t - 1.0) / 3.0;
                     offset = -0.08 * Math.cos(norm * Math.PI);
-                } else if (t > 2.5 && t < 6.5) {
+                } else if (t > 4.0 && t < 6.5) {
                     // Pausa en el extremo opuesto (-0.08)
                     offset = 0.08;
-                } else if (t >= 6.5 && t <= 8.0) {
+                } else if (t >= 6.5 && t <= 9.5) {
                     // Barrido fluido: Regreso al punto inicial (-0.08 a 0.08)
-                    const norm = (t - 6.5) / 1.5;
+                    const norm = (t - 6.5) / 3.0;
                     offset = 0.08 * Math.cos(norm * Math.PI);
                 }
+                // El resto del tiempo la cámara espera en el punto inicial (+0.08)
 
-                // Aplicamos la inversión si estamos en modo foto para que el giro se sienta natural
-                const finalOffset = offset * inversionTutorial;
-
-                // Actualizamos posición orbitando el target actual
-                camara.position.x = controles.target.x + Math.sin(anguloTutorialBase + finalOffset) * tutorialDistance;
-                camara.position.z = controles.target.z + Math.cos(anguloTutorialBase + finalOffset) * tutorialDistance;
-                camara.position.y = tutorialY;
+                camara.position.x = Math.sin(anguloTutorialBase + offset) * 15;
+                camara.position.z = Math.cos(anguloTutorialBase + offset) * 15;
                 camara.lookAt(controles.target);
             }
 
