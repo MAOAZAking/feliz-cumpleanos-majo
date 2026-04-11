@@ -2333,47 +2333,45 @@ const smokeTexture = crearTexturaHumo();
             if (interfazFoto.style.display !== 'none') {
                 if (timeDiff < 400 && timeDiff > 0) {
                     // Intersectar con el grupo del pastel
-                    // Intersectar con el grupo del pastel
                     const intersects = raycaster.intersectObjects(grupoPastel.children, true);
                     if (intersects.length > 0) {
-                        // --- LÓGICA DE SOPLIDO ---
-                        
+                        // ¡Doble tap en el pastel confirmado!
+                        //isListeningForBlow = true;
+                        // Avanzar tutorial al Paso 3
                         if (pasoTutorialVelas === 2) {
-                            // MODO TUTORIAL: Solo ocurre la primera vez después de la foto
-                            pasoTutorialVelas = 3; 
-                            isListeningForBlow = false; // Bloqueado momentáneamente para el deseo
+                            pasoTutorialVelas = 3; // Avanzamos el paso para que no se repita el ciclo si toca de nuevo
+                            isListeningForBlow = false; // Bloqueamos la escucha inicialmente
 
+                            // 1. Mensaje del deseo (7 segundos)
                             actualizarMensajeTutorial("Antes que nada pide un deseo, pero shhh 🤫 no lo digas.");
 
                             setTimeout(() => {
-                                if (pasoTutorialVelas !== 3) return;
+                                if (pasoTutorialVelas !== 3) return; // Seguridad por si sale del modo foto
+                                
+                                // 2. Mensaje de confirmación (4 segundos)
                                 actualizarMensajeTutorial("<center>¿Lista?🤔</center>");
 
                                 setTimeout(() => {
                                     if (pasoTutorialVelas !== 3) return;
+
+                                    // 3. Mensaje final de acción (Se queda fijo)
                                     actualizarMensajeTutorial("ahora si sopla muy fuerte 💨...");
 
+                                    // 4. Esperar 2 segundos adicionales después del mensaje para habilitar el micrófono
                                     setTimeout(() => {
                                         if (pasoTutorialVelas !== 3) return;
+                                        
                                         isListeningForBlow = true; 
-                                        console.log("Micrófono activado (Tutorial)");
+                                        console.log("Escucha de soplido activada ahora.");
                                     }, 2000);
-                                }, 4000);
-                            }, 7000);
 
-                        } else {
-                            // MODO EXPERTO: Si ya sabe qué hacer o el tutorial ya pasó
-                            isListeningForBlow = true; 
-                            console.log("Micrófono activado inmediatamente (Modo Experto)");
-                            
-                            // Si ya completó el tutorial una vez, le damos un mensaje rápido de feedback
-                            if (pasoTutorialVelas >= 6) {
-                                actualizarMensajeTutorial("¡Sopla fuerte! 💨", 2000);
-                            }
+                                }, 4000);
+
+                            }, 7000);
                         }
                     }
                 }
-            }
+            } 
             else if (giftMode === 'pile') {
                 // Requerimos doble toque para evitar conflicto con la rotación 3D
                 if (timeDiff < 400 && timeDiff > 0) {

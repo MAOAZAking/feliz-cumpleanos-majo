@@ -2333,47 +2333,18 @@ const smokeTexture = crearTexturaHumo();
             if (interfazFoto.style.display !== 'none') {
                 if (timeDiff < 400 && timeDiff > 0) {
                     // Intersectar con el grupo del pastel
-                    // Intersectar con el grupo del pastel
                     const intersects = raycaster.intersectObjects(grupoPastel.children, true);
                     if (intersects.length > 0) {
-                        // --- LÓGICA DE SOPLIDO ---
-                        
+                        // ¡Doble tap en el pastel confirmado!
+                        isListeningForBlow = true;
+                        // Avanzar tutorial al Paso 3
                         if (pasoTutorialVelas === 2) {
-                            // MODO TUTORIAL: Solo ocurre la primera vez después de la foto
-                            pasoTutorialVelas = 3; 
-                            isListeningForBlow = false; // Bloqueado momentáneamente para el deseo
-
-                            actualizarMensajeTutorial("Antes que nada pide un deseo, pero shhh 🤫 no lo digas.");
-
-                            setTimeout(() => {
-                                if (pasoTutorialVelas !== 3) return;
-                                actualizarMensajeTutorial("<center>¿Lista?🤔</center>");
-
-                                setTimeout(() => {
-                                    if (pasoTutorialVelas !== 3) return;
-                                    actualizarMensajeTutorial("ahora si sopla muy fuerte 💨...");
-
-                                    setTimeout(() => {
-                                        if (pasoTutorialVelas !== 3) return;
-                                        isListeningForBlow = true; 
-                                        console.log("Micrófono activado (Tutorial)");
-                                    }, 2000);
-                                }, 4000);
-                            }, 7000);
-
-                        } else {
-                            // MODO EXPERTO: Si ya sabe qué hacer o el tutorial ya pasó
-                            isListeningForBlow = true; 
-                            console.log("Micrófono activado inmediatamente (Modo Experto)");
-                            
-                            // Si ya completó el tutorial una vez, le damos un mensaje rápido de feedback
-                            if (pasoTutorialVelas >= 6) {
-                                actualizarMensajeTutorial("¡Sopla fuerte! 💨", 2000);
-                            }
+                            pasoTutorialVelas = 3;
+                            actualizarMensajeTutorial("Antes que nada pide un deseo, pero shhh 🤫 no lo digas <br><br> <center>¿Lista?🤔</center> <br><br> ahora si sopla muy fuerte 💨...");
                         }
                     }
                 }
-            }
+            } 
             else if (giftMode === 'pile') {
                 // Requerimos doble toque para evitar conflicto con la rotación 3D
                 if (timeDiff < 400 && timeDiff > 0) {
@@ -2879,7 +2850,7 @@ const smokeTexture = crearTexturaHumo();
             if (candleLights.length > 0 && candleLights[0].intensity > 0) {
                 if (pasoTutorialVelas === 0) {
                     pasoTutorialVelas = 1;
-                    actualizarMensajeTutorial("¡Wow quedó muy bonita la foto!😍 Pero se te olvido una cosita🤭🫣 <br><br> <b style='color: black !important, animation: palpitar 1s infinite; transition: transform 0.2s, background 0.2s; text-transform: uppercase; text-shadow: 0 0 5px #000000, 0 0 10px #000000, 0 0 20px #000000 !important;'>TOCA EN REPETIR FOTO</b>");
+                    actualizarMensajeTutorial("¡Wow quedó muy bonita la foto!😍 Pero se te olvido una cosita🤭🫣 <br><br> <b style='color: black !important, animation: palpitar 1s infinite; transition: transform 0.2s, background 0.2s; text-transform: uppercase; text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px #0077FF !important;'>TOCA EN REPETIR FOTO</b>");
                 } else if (pasoTutorialVelas < 6) {
                     // Si ya está en medio del tutorial, solo asegurarnos de que sea visible
                     const hint = document.getElementById('hint-velas');

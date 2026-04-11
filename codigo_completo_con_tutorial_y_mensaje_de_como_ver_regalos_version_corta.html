@@ -647,7 +647,8 @@
     <!-- Tutorial de Velas (Se activa tras tomar la foto) -->
     <div id="hint-velas">
         <div class="hint-velas-content">
-            😍¡Wow quedó muy bonita la foto!😍 Pero se te olvido una cosita🤭🫣... <br><br> Toca en repetir foto
+            ¡Quedó muy bien la foto! Pero no apagaste las velas... <br><br>
+            Toca 2 veces el pastel y sopla para ver tus regalos 🎂💨
         </div>
     </div>
 
@@ -2249,26 +2250,8 @@ const smokeTexture = crearTexturaHumo();
         let audioContext, analyser, microphone;
         let isListeningForBlow = false;
         let lastTapTime = 0;
-        let pasoTutorialVelas = 0; // NUEVO: Controla la fase del tutorial post-foto
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
-
-        // NUEVO: Función para actualizar el mensaje del tutorial en pantalla
-        function actualizarMensajeTutorial(mensaje, duracion = 0) {
-            const hint = document.getElementById('hint-velas');
-            const content = hint.querySelector('.hint-velas-content');
-            if (content && hint) {
-                content.innerHTML = mensaje;
-                hint.style.display = 'block';
-                setTimeout(() => { hint.style.opacity = 1; }, 50);
-
-                if (duracion > 0) {
-                    setTimeout(() => {
-                        ocultarHintVelas();
-                    }, duracion);
-                }
-            }
-        }
 
         function iniciarEscuchaSecreta() {
             if (flujoVideo) {
@@ -2308,7 +2291,7 @@ const smokeTexture = crearTexturaHumo();
             const average = sum / bufferLength;
 
             // Umbral de volumen BAJADO para facilitar detección (antes 45)
-            if (average > 37) {
+            if (average > 10) {
                 apagarVelasYActivarRegalo();
             }
 
@@ -2333,58 +2316,19 @@ const smokeTexture = crearTexturaHumo();
             if (interfazFoto.style.display !== 'none') {
                 if (timeDiff < 400 && timeDiff > 0) {
                     // Intersectar con el grupo del pastel
-                    // Intersectar con el grupo del pastel
                     const intersects = raycaster.intersectObjects(grupoPastel.children, true);
                     if (intersects.length > 0) {
-                        // --- LÓGICA DE SOPLIDO ---
-                        
-                        if (pasoTutorialVelas === 2) {
-                            // MODO TUTORIAL: Solo ocurre la primera vez después de la foto
-                            pasoTutorialVelas = 3; 
-                            isListeningForBlow = false; // Bloqueado momentáneamente para el deseo
-
-                            actualizarMensajeTutorial("Antes que nada pide un deseo, pero shhh 🤫 no lo digas.");
-
-                            setTimeout(() => {
-                                if (pasoTutorialVelas !== 3) return;
-                                actualizarMensajeTutorial("<center>¿Lista?🤔</center>");
-
-                                setTimeout(() => {
-                                    if (pasoTutorialVelas !== 3) return;
-                                    actualizarMensajeTutorial("ahora si sopla muy fuerte 💨...");
-
-                                    setTimeout(() => {
-                                        if (pasoTutorialVelas !== 3) return;
-                                        isListeningForBlow = true; 
-                                        console.log("Micrófono activado (Tutorial)");
-                                    }, 2000);
-                                }, 4000);
-                            }, 7000);
-
-                        } else {
-                            // MODO EXPERTO: Si ya sabe qué hacer o el tutorial ya pasó
-                            isListeningForBlow = true; 
-                            console.log("Micrófono activado inmediatamente (Modo Experto)");
-                            
-                            // Si ya completó el tutorial una vez, le damos un mensaje rápido de feedback
-                            if (pasoTutorialVelas >= 6) {
-                                actualizarMensajeTutorial("¡Sopla fuerte! 💨", 2000);
-                            }
-                        }
+                        // ¡Doble tap en el pastel confirmado!
+                        isListeningForBlow = true;
                     }
                 }
-            }
+            } 
             else if (giftMode === 'pile') {
                 // Requerimos doble toque para evitar conflicto con la rotación 3D
                 if (timeDiff < 400 && timeDiff > 0) {
                     const intersects = raycaster.intersectObjects(giftGroup.children, true);
                     if (intersects.length > 0) {
                         // Start viewing gifts
-                        // Avanzar tutorial al Paso 5 (Fin)
-                        if (pasoTutorialVelas === 4) {
-                            pasoTutorialVelas = 6; // 6 significa terminado
-                            actualizarMensajeTutorial("Perfecto ya sabes ahora como ver los regalos cuando quieras", 7000);
-                        }
                         enterGiftView(0); // Start with first gift (Rose)
                     }
                 }
@@ -2432,13 +2376,7 @@ const smokeTexture = crearTexturaHumo();
             if (!isListeningForBlow) return;
             isListeningForBlow = false; // Desactivar para no disparar múltiple
 
-            // Avanzar tutorial al Paso 4
-            if (pasoTutorialVelas === 3) {
-                pasoTutorialVelas = 4;
-                actualizarMensajeTutorial("Urra ya apagaste las velas 🕯️<br> Ahora para mirar bien los regalos <br> Toca 2 veces en los regalos 🎁...");
-            } else {
-                ocultarHintVelas();
-            }
+            ocultarHintVelas(); // Ocultar el mensaje tutorial inmediatamente
 
             // 1. Apagar luces y ocultar llamas
             candleLights.forEach(l => l.intensity = 0);
@@ -2877,15 +2815,9 @@ const smokeTexture = crearTexturaHumo();
         function mostrarHintVelas() {
             // Solo si las velas están prendidas (intensidad > 0)
             if (candleLights.length > 0 && candleLights[0].intensity > 0) {
-                if (pasoTutorialVelas === 0) {
-                    pasoTutorialVelas = 1;
-                    actualizarMensajeTutorial("¡Wow quedó muy bonita la foto!😍 Pero se te olvido una cosita🤭🫣 <br><br> <b style='color: black !important, animation: palpitar 1s infinite; transition: transform 0.2s, background 0.2s; text-transform: uppercase; text-shadow: 0 0 5px #000000, 0 0 10px #000000, 0 0 20px #000000 !important;'>TOCA EN REPETIR FOTO</b>");
-                } else if (pasoTutorialVelas < 6) {
-                    // Si ya está en medio del tutorial, solo asegurarnos de que sea visible
-                    const hint = document.getElementById('hint-velas');
-                    hint.style.display = 'block';
-                    setTimeout(() => { hint.style.opacity = 1; }, 100);
-                }
+                const hint = document.getElementById('hint-velas');
+                hint.style.display = 'block';
+                setTimeout(() => { hint.style.opacity = 1; }, 100);
             }
         }
 
@@ -2969,16 +2901,12 @@ const smokeTexture = crearTexturaHumo();
             mallaFoto.material.opacity = 0;
             mallaFoto.material.needsUpdate = true;
 
-            // Avanzar tutorial al Paso 2
-            if (pasoTutorialVelas === 1) {
-                pasoTutorialVelas = 2;
-                actualizarMensajeTutorial("Toca 2 veces rapido en el pastel 🎂...");
-            } else {
-                ocultarHintVelas(); // Limpiar el mensaje si ya pasó esa etapa
-            }
+            ocultarHintVelas(); // Limpiar el mensaje si decide repetir la foto
 
             controlesResultado.style.display = 'none';
             botonModoFoto.click(); // Simular click para abrir cámara de nuevo
+            // Volver a poner la animación de palpitar al botón de modo foto
+            //botonModoFoto.classList.remove('btn-no-pulse');
         });
 
         // 5. Compartir (Condensar y Guardar/Share)
