@@ -644,9 +644,11 @@
         <div class="tutorial-text">Desliza para mirar a tu alrededor</div>
     </div>
 
-    <!-- Tutorial de Velas Dinámico (Portado de v37) -->
+    <!-- Tutorial de Velas (Se activa tras tomar la foto) -->
     <div id="hint-velas">
-        <div class="hint-velas-content"></div>
+        <div class="hint-velas-content">
+            😍¡Wow quedó muy bonita la foto!😍 Pero se te olvido una cosita🤭🫣... <br><br> Toca en repetir foto
+        </div>
     </div>
 
     <div id="mensaje-estado"></div>
@@ -933,108 +935,39 @@
         grupoMesa.position.set(0, -10.1, -12); // Bajada para tocar el suelo (suelo en -10.1 local)
         escena.add(grupoMesa);
 
-        // 4. Pastel (Nueva Versión con LOD para optimización móvil)
+        // 4. Pastel
         const grupoPastel = new THREE.Group();
-        grupoPastel.position.set(0, -4.15, -12);
-
-        function crearFrutosRelieve(toppingRadius) {
-            const numFrutos = isMobile ? 0 : 30; // No frutos en móvil
-            const frutoColorBase = 0x8B0000; // Rojo oscuro
-            const matFruto = new THREE.MeshStandardMaterial({
-                color: frutoColorBase,
-                roughness: 0.1, // Brillante
-                metalness: 0.2, // Reflexión
-            });
-            
-            // Frutos son como esferas aplastadas
-            const geoFruto = new THREE.SphereGeometry(0.15, 16, 16);
-
-            for (let i = 0; i < numFrutos; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const dist = Math.random() * (toppingRadius - 0.2); // No tocar el borde
-                const colorVariacion = (Math.random() - 0.5) * 0.1; // Variación sutil del color
-
-                const matFrutoVar = matFruto.clone();
-                const color = new THREE.Color(frutoColorBase).offsetHSL(0, 0, colorVariacion);
-                matFrutoVar.color.copy(color);
-
-                const mallaFruto = new THREE.Mesh(geoFruto, matFrutoVar);
-                mallaFruto.scale.set(1, 0.5, 1); // Aplicar aplastamiento
-                mallaFruto.position.set(Math.cos(angle) * dist, 2.06, Math.sin(angle) * dist); 
-                mallaFruto.castShadow = true;
-                grupoPastel.add(mallaFruto);
-            }
-        }
-
-        const radioCuerpo = 2.5;
-        const alturaCuerpo = 2.0; 
-        const matCuerpoLiso = new THREE.MeshStandardMaterial({ 
-            color: 0xFFF8DC, // Crema/Blanco amarillento
-            roughness: isMobile ? 0.9 : 0.6,
-        });
-
-        // Cuerpo del Pastel con Relieve Irregular (Mucho más liviano que usar mallas separadas)
-        const geoPastel = new THREE.CylinderGeometry(
-            radioCuerpo, 
-            radioCuerpo, 
-            alturaCuerpo, 
-            isMobile ? 32 : 128, // Más segmentos para un relieve suave
-            isMobile ? 2 : 24    // Segmentos de altura
-        ); 
-
-        // Aplicar protuberancias y relieve aleatorio directamente a los vértices
-        if (!isMobile) {
-            const posAttr = geoPastel.attributes.position;
-            const vTemp = new THREE.Vector3();
-            for (let i = 0; i < posAttr.count; i++) {
-                vTemp.fromBufferAttribute(posAttr, i);
-                
-                // Deformar solo superficie lateral y superior (evitar base para que no flote)
-                if (vTemp.y > -(alturaCuerpo / 2) + 0.05) {
-                    const protu = Math.random() * 0.12; // Intensidad del relieve lateral
-                    const ang = Math.atan2(vTemp.z, vTemp.x);
-                    if (Math.abs(vTemp.x) > 0.1 || Math.abs(vTemp.z) > 0.1) {
-                        vTemp.x += Math.cos(ang) * protu;
-                        vTemp.z += Math.sin(ang) * protu;
-                    }
-                    // Subidas y bajadas aleatorias
-                    vTemp.y += (Math.random() - 0.5) * 0.1;
-                    posAttr.setXYZ(i, vTemp.x, vTemp.y, vTemp.z);
-                }
-            }
-            geoPastel.computeVertexNormals();
-        }
-
-        const cuerpoPastel = new THREE.Mesh(geoPastel, matCuerpoLiso);
-        cuerpoPastel.position.y = alturaCuerpo / 2; // Pivote en la base
+        grupoPastel.position.set(0, -4.15, -12); // Ajustado a la nueva altura de la mesa y plato
+        
+        // Cuerpo del Pastel (1 Piso Grande)
+        const geoPastel = new THREE.CylinderGeometry(2.5, 2.5, 2.0, 40);
+        const matPastel = new THREE.MeshStandardMaterial({ color: 0xFFB7C5, roughness: 0.4 }); // Rosa pastel suave
+        const cuerpoPastel = new THREE.Mesh(geoPastel, matPastel);
+        cuerpoPastel.position.y = 1.0; 
         cuerpoPastel.castShadow = true;
         grupoPastel.add(cuerpoPastel);
 
-        // Decoración superior (Dona blanca gruesa)
-        const radioTorus = 2.35; 
-        const grosorTorus = 0.19; 
-        const geoTorus = new THREE.TorusGeometry(radioTorus, grosorTorus, 16, isMobile ? 32 : 50); 
-        geoTorus.rotateX(Math.PI / 2); 
-        const matTorus = new THREE.MeshBasicMaterial({ color: 0xFAFAF2 }); 
-        const donaDecoracion = new THREE.Mesh(geoTorus, matTorus);
-        donaDecoracion.position.y = alturaCuerpo; 
-        grupoPastel.add(donaDecoracion);
+        // Decoración: Crema en los bordes (Esferas simulando manga pastelera)
+        const geoCrema = new THREE.SphereGeometry(0.25, 16, 16);
+        const matCrema = new THREE.MeshStandardMaterial({ color: 0xFFFFF0, roughness: 0.2 }); // Blanco crema
+        
+        const numBolitas = 30;
+        const radioCrema = 2.4;
+        
+        // Función para crear anillos de crema
+        const crearDecoracionBorde = (yPos) => {
+            for(let i=0; i<numBolitas; i++) {
+                const angulo = (i / numBolitas) * Math.PI * 2;
+                const bolita = new THREE.Mesh(geoCrema, matCrema);
+                // Posicionar en círculo
+                bolita.position.set(Math.cos(angulo)*radioCrema, yPos, Math.sin(angulo)*radioCrema);
+                grupoPastel.add(bolita);
+            }
+        };
+        
+        crearDecoracionBorde(2.0); // Borde superior del pastel
+        crearDecoracionBorde(0.1); // Borde inferior del pastel
 
-        // Salsa de frutos rojos
-        const geoSalsa = new THREE.CircleGeometry(2.3, isMobile ? 32 : 50); 
-        geoSalsa.rotateX(-Math.PI / 2); 
-        const matSalsa = new THREE.MeshStandardMaterial({ 
-            color: 0xB22222, 
-            roughness: 0.1, 
-            metalness: 0.2, 
-        });
-        const salsaFrutosRojos = new THREE.Mesh(geoSalsa, matSalsa);
-        salsaFrutosRojos.position.y = alturaCuerpo + 0.05; 
-        grupoPastel.add(salsaFrutosRojos);
-
-        if (!isMobile) {
-            crearFrutosRelieve(2.3);
-        }
         escena.add(grupoPastel);
 
         // Decoraciones de Fiesta (Globos)
@@ -1559,21 +1492,6 @@
             }
         }
 
-        function mostrarTutorial() {
-            if (usuarioInteractuo) return; // No mostrar si el usuario ya tomó el control
-
-            const hint = document.getElementById('tutorial-hint');
-            if (hint) {
-                hint.style.display = 'flex';
-                if (!isMobile) {
-                    prepararBaseTutorial();
-                }
-                
-                // Pequeño delay para que la transición de opacidad funcione
-                setTimeout(() => { hint.style.opacity = 1; }, 100);
-            }
-        }
-
         // --- BOMBILLO EN EL TECHO ---
         function crearBombillo() {
             const grupoLuz = new THREE.Group();
@@ -1731,18 +1649,16 @@
 
             // 3. Luces Potentes (Efecto Bañador de Pared)
             // Luz Hacia Arriba
-            const spotArriba = new THREE.SpotLight(0xFFCC66, isMobile ? 10.0 : 15.0, 20, Math.PI/3, 0.5, 1);
+            const spotArriba = new THREE.SpotLight(0xFFCC66, 15.0, 20, Math.PI/3, 0.5, 1);
             spotArriba.position.set(0, 0.2, 0);
             spotArriba.target.position.set(0, 10, -0.5); // Apunta arriba y pegado a la pared
-            if (!isMobile) spotArriba.castShadow = true;
             grupoAplique.add(spotArriba);
             grupoAplique.add(spotArriba.target);
 
             // Luz Hacia Abajo
-            const spotAbajo = new THREE.SpotLight(0xFFCC66, isMobile ? 8.0 : 12.0, 20, Math.PI/3, 0.5, 1);
+            const spotAbajo = new THREE.SpotLight(0xFFCC66, 12.0, 20, Math.PI/3, 0.5, 1);
             spotAbajo.position.set(0, -0.2, 0);
             spotAbajo.target.position.set(0, -10, -0.5); // Apunta abajo y pegado a la pared
-            if (!isMobile) spotAbajo.castShadow = true;
             grupoAplique.add(spotAbajo);
             grupoAplique.add(spotAbajo.target);
 
@@ -1761,62 +1677,67 @@
         const cargadorFuentes = new FontLoader();
         cargadorFuentes.load('https://unpkg.com/three@0.160.0/examples/fonts/helvetiker_regular.typeface.json', function (fuente) {
             
-            // Configuración de los números de las velas
-            const numeroVelaIzq = "2";
-            const numeroVelaDer = "2";
+            // Texto: Feliz Cumple Majo
+            const geoTexto = new TextGeometry('          Feliz Cumple \n \n           Majo D.T.B.', {
+                font: fuente,
+                size: 0.3,
+                height: 0.05,
+            });
+            geoTexto.center(); // Centrar geometría para manejarla mejor
+            const mallaTexto = new THREE.Mesh(geoTexto, new THREE.MeshStandardMaterial({ color: 0xFF1493 }));
+            mallaTexto.position.set(0, 2.05, 1);
+            mallaTexto.rotation.x = -Math.PI / 2;
+            grupoPastel.add(mallaTexto);
 
-            // Función para crear velas con números integrados
-            const crearVelaNumero = (x, valor, fuente) => {
-                const grupoVela = new THREE.Group();
+            // Vela # 1 "2"
+            const geoV2 = new TextGeometry('2', { font: fuente, size: 0.8, height: 0.1 });
+            const v2 = new THREE.Mesh(geoV2, new THREE.MeshStandardMaterial({ color: 'red' }));
+            v2.position.set(-0.7, 2.1, -0.5); // Sobre la superficie y=2.0
+            grupoPastel.add(v2);
 
-                // 1. Número 3D (Cuerpo de la vela)
-                const geoNum = new TextGeometry(valor, {
-                    font: fuente,
-                    size: 1.0,
-                    height: 0.2,
-                });
-                geoNum.center();
-                const mallaNum = new THREE.Mesh(geoNum, new THREE.MeshStandardMaterial({metalness: 0.3, roughness: 0.2, color: 0xFFF800}));
-                mallaNum.castShadow = true;
-                grupoVela.add(mallaNum);
+            // Vela # 2 "2"
+            const geoV1 = new TextGeometry('2', { font: fuente, size: 0.8, height: 0.1 });
+            const v1 = new THREE.Mesh(geoV1, new THREE.MeshStandardMaterial({ color: 'red' }));
+            v1.position.set(-0.1, 2.1, -0.5);
+            grupoPastel.add(v1);
 
-                // Calcular el punto más alto del número para la llama
-                const cajaVela = new THREE.Box3().setFromObject(mallaNum);
-                const yTope = cajaVela.max.y;
+            // Mechas y Llamas
+            const crearLlama = (x) => {
+                const grupoLlama = new THREE.Group();
 
-                // 2. Mecha
-                const mecha = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.2), new THREE.MeshBasicMaterial({color:0x000000}));
-                mecha.position.y = yTope + 0.1;
-                grupoVela.add(mecha);
+                const mecha = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.3), new THREE.MeshBasicMaterial({color:0x000000}));
+                grupoLlama.add(mecha);
                 
-                // 3. Llama
-                const llamaExt = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 16), new THREE.MeshBasicMaterial({ color: 0xFF6600, transparent: true, opacity: 0.8 }));
-                const llamaInt = new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 16), new THREE.MeshBasicMaterial({ color: 0xFFD700 }));
-                llamaExt.position.y = yTope + 0.3;
-                llamaInt.position.y = yTope + 0.25;
-                grupoVela.add(llamaExt, llamaInt);
+                const llamaExterior = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 16), new THREE.MeshBasicMaterial({ color: 0xFF6600, transparent: true, opacity: 0.8 }));
+                const llamaInterior = new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 16), new THREE.MeshBasicMaterial({ color: 0xFFD700 }));
+                llamaExterior.position.y = 0.25;
+                llamaInterior.position.y = 0.2;
+                grupoLlama.add(llamaExterior, llamaInterior);
 
-                // Luz que emite la llama
-                const luz = new THREE.PointLight(0xffaa33, isMobile ? 0.4 : 0.7, 4, 2);
-                luz.position.y = yTope + 0.35;
-                grupoVela.add(luz);
+                // Luz que emite la vela
+                const luzVela = new THREE.PointLight(0xffaa33, 0.7, 4, 2);
+                luzVela.position.y = 0.4;
+                grupoLlama.add(luzVela);
                 
-                candleLights.push(luz);
-                flameMeshes.push(llamaExt, llamaInt);
+                candleLights.push(luzVela);
+                // flameMeshes.push(grupoLlama); // ANTES: Guardaba todo el grupo (incluida la mecha)
+                // AHORA: Guardamos solo las partes de fuego para ocultar solo eso
+                flameMeshes.push(llamaExterior);
+                flameMeshes.push(llamaInterior);
 
-                // Posicionamos el grupo sobre la superficie del pastel (alturaCuerpo es 3.0)
-                grupoVela.position.set(x, 2.15 + (yTope - cajaVela.min.y) / 2, 0);
-                grupoPastel.add(grupoVela);
+                grupoLlama.position.set(x, 3.0, -0.45);
+                grupoPastel.add(grupoLlama);
                 
+                // Guardamos para el loop principal
                 llamasParaAnimar.push({
-                    exterior: llamaExt,
-                    interior: llamaInt,
+                    exterior: llamaExterior,
+                    interior: llamaInterior,
                     x: x
                 });
             };
 
-            crearVelaNumero(-0.45, numeroVelaIzq, fuente); 
-            crearVelaNumero(0.45, numeroVelaDer, fuente);  
+            crearLlama(-0.35); // Para el primer número (2)
+            crearLlama(0.2);  // Para el Segundo número (2) (ajustado en X)
 
             // --- CREAR EL RELOJ DE PARED ---
             crearReloj(fuente);
@@ -1914,78 +1835,14 @@
         });
 
         function actualizarLlamas(tiempo) {
-            // OPTIMIZACIÓN: En móvil dejamos la llama estática para ahorrar CPU/Batería
-            if (isMobile) return;
+            // OPTIMIZACIÓN: En móvil reducimos la frecuencia de actualización de las llamas
+            if (isMobile && Math.random() > 0.5) return;
 
             llamasParaAnimar.forEach(l => {
                 l.exterior.scale.y = 1 + Math.sin(tiempo * 2.1 + l.x) * 0.2;
                 l.exterior.scale.x = 1 + Math.cos(tiempo * 1.7 + l.x) * 0.15;
                 l.interior.scale.copy(l.exterior.scale).multiplyScalar(0.6);
             });
-        }
-
-        // --- SISTEMA DE HUMO (Para cuando se apagan las velas) ---
-        const smokeParticles = [];
-        // --- CORRECCIÓN TEXTURA DE HUMO ---
-// Función para crear la textura de humo sin archivos externos
-function crearTexturaHumo() {
-    const canvas = document.createElement('canvas');
-    canvas.width = 32;
-    canvas.height = 32;
-    const ctx = canvas.getContext('2d');
-    const grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
-    grad.addColorStop(0, 'rgba(200, 200, 200, 1)'); // Gris en el centro
-    grad.addColorStop(1, 'rgba(200, 200, 200, 0)'); // Transparente en bordes
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 32, 32);
-    const texture = new THREE.CanvasTexture(canvas);
-    return texture;
-}
-
-// Usamos la función en lugar de cargar la imagen externa
-const smokeTexture = crearTexturaHumo();
-// const smokeTexture = new THREE.TextureLoader().load('...'); // Borra o comenta la línea vieja
-
-        const smokeMaterial = new THREE.MeshLambertMaterial({ 
-            color: 0x555555, // Gris oscuro para que se vea sobre el fondo claro
-            map: smokeTexture, 
-            transparent: true, 
-            opacity: 0.8, // Más visible al inicio
-            depthWrite: false
-        });
-        const smokeGeo = new THREE.PlaneGeometry(0.5, 0.5);
-
-        function spawnSmoke(x, y, z) {
-            for(let i=0; i<5; i++) {
-                const particle = new THREE.Mesh(smokeGeo, smokeMaterial);
-                particle.position.set(x + (Math.random()-0.5)*0.1, y, z + (Math.random()-0.5)*0.1);
-                particle.rotation.z = Math.random() * 2 * Math.PI;
-                particle.material.opacity = 0.6;
-                // Velocidad aleatoria hacia arriba
-                particle.userData = { 
-                    vy: 0.02 + Math.random() * 0.02, 
-                    vx: (Math.random()-0.5) * 0.01, 
-                    vz: (Math.random()-0.5) * 0.01 
-                };
-                grupoPastel.add(particle);
-                smokeParticles.push(particle);
-            }
-        }
-
-        function updateSmoke() {
-            for(let i = smokeParticles.length - 1; i >= 0; i--) {
-                let p = smokeParticles[i];
-                p.position.y += p.userData.vy;
-                p.position.x += p.userData.vx;
-                p.position.z += p.userData.vz;
-                p.rotation.z += 0.01;
-                p.material.opacity -= 0.005; // Desvanecimiento más lento
-                p.scale.multiplyScalar(1.02); // Expandir
-                if(p.material.opacity <= 0) {
-                    grupoPastel.remove(p);
-                    smokeParticles.splice(i, 1);
-                }
-            }
         }
 
         // --- SISTEMA DE REGALOS (GLB y Lógica) ---
@@ -2177,18 +2034,43 @@ const smokeTexture = crearTexturaHumo();
         let startTimeTutorial = 0;
         let tutorialCamPos = new THREE.Vector3();
 
+        // Función auxiliar para reiniciar el tiempo de la animación CSS 100%
+        function reiniciarAnimacionesCSS(hintElement) {
+            const oldHand = hintElement.querySelector('.hand-animation');
+            if (oldHand) {
+                const newHand = oldHand.cloneNode(true);
+                oldHand.parentNode.replaceChild(newHand, oldHand);
+            }
+        }
+
+        function mostrarTutorial() {
+            if (usuarioInteractuo) return;
+
+            if (!isMobile) {
+                // En PC, prepararBaseTutorial hace el movimiento previo y luego lo muestra
+                prepararBaseTutorial();
+            } else {
+                // En móvil solo lo mostramos
+                const hint = document.getElementById('tutorial-hint');
+                if (hint) {
+                    reiniciarAnimacionesCSS(hint);
+                    hint.style.display = 'flex';
+                    setTimeout(() => { hint.style.opacity = 1; }, 100);
+                }
+            }
+        }
+
         // Captura dinámicamente el estado actual para que el tutorial sea relativo
         function prepararBaseTutorial() {
             if (usuarioInteractuo || tutorialActivo) return;
 
-            // Aseguramos que el emoji esté oculto y reiniciado mientras la cámara se posiciona
+            // Ocultamos el tutorial si estaba visible para que no se cruce
             const hint = document.getElementById('tutorial-hint');
             if (hint) {
-                hint.style.display = 'none';
                 hint.style.opacity = 0;
+                hint.style.display = 'none';
             }
 
-            // Capturamos el ángulo horizontal actual, distancia y altura respecto al objetivo real
             controles.update();
             const baseAzimuth = controles.getAzimuthalAngle();
             
@@ -2197,9 +2079,7 @@ const smokeTexture = crearTexturaHumo();
             const dist = Math.sqrt(dx * dx + dz * dz);
             const y = camara.position.y;
 
-            // Inversión: Normal (Z+) -> 1, Modo Foto (Z-) -> -1
             const inversion = (camara.position.z < 0) ? -1 : 1;
-            // Punto inicial deseado: -0.08 (Der) si inversion=1, 0.08 (Izq) si inversion=-1
             const targetStartOffset = -0.08 * inversion;
             
             const targetStartPos = new THREE.Vector3(
@@ -2208,9 +2088,11 @@ const smokeTexture = crearTexturaHumo();
                 controles.target.z + Math.cos(baseAzimuth + targetStartOffset) * dist
             );
 
-            // Primero movemos la cámara suavemente al punto de inicio del barrido
+            // Movemos la cámara suavemente al punto de inicio del barrido
             animarCamara(targetStartPos, controles.target, () => {
                 if (usuarioInteractuo) return;
+                
+                // Fijamos valores y empezamos la oscilación 3D
                 anguloTutorialBase = baseAzimuth;
                 tutorialDistance = dist;
                 tutorialY = y;
@@ -2218,6 +2100,7 @@ const smokeTexture = crearTexturaHumo();
                 startTimeTutorial = Date.now();
                 tutorialActivo = true;
 
+                // AHORA SÍ: Reiniciamos la animación CSS y mostramos justo a tiempo
                 if (hint) {
                     reiniciarAnimacionesCSS(hint);
                     hint.style.display = 'flex';
@@ -2229,33 +2112,6 @@ const smokeTexture = crearTexturaHumo();
         let tutorialY = 5;
         let inversionTutorial = 1;
         let usuarioInteractuo = false;
-        let pasoTutorialVelas = 0; // Control de fases del tutorial (Portado de v37)
-
-        // Función para reiniciar el tiempo de la animación CSS clonando el nodo (Fix Emoji)
-        function reiniciarAnimacionesCSS(hintElement) {
-            const oldHand = hintElement.querySelector('.hand-animation');
-            if (oldHand) {
-                const newHand = oldHand.cloneNode(true);
-                oldHand.parentNode.replaceChild(newHand, oldHand);
-            }
-        }
-
-        // Función para actualizar el mensaje del tutorial en pantalla
-        function actualizarMensajeTutorial(mensaje, duracion = 0) {
-            const hint = document.getElementById('hint-velas');
-            const content = hint.querySelector('.hint-velas-content');
-            if (content && hint) {
-                content.innerHTML = mensaje;
-                hint.style.display = 'block';
-                setTimeout(() => { hint.style.opacity = 1; }, 50);
-
-                if (duracion > 0) {
-                    setTimeout(() => {
-                        ocultarHintVelas();
-                    }, duracion);
-                }
-            }
-        }
 
 
         // --- Inicializar IA ---
@@ -2291,7 +2147,7 @@ const smokeTexture = crearTexturaHumo();
         // 1. Abrir Modo Foto
         botonModoFoto.addEventListener('click', async () => {
             try {
-                // Detener y ocultar tutorial inmediatamente para garantizar el reinicio sincronizado
+                // Apagar tutorial visual inmediatamente
                 tutorialActivo = false;
                 const hint = document.getElementById('tutorial-hint');
                 if (hint) {
@@ -2299,38 +2155,25 @@ const smokeTexture = crearTexturaHumo();
                     hint.style.display = 'none';
                 }
 
-                // Optimización: Cargar IA solo si no está lista
                 if (!segmentador) {
                     mensajeEstado.textContent = "Iniciando sistema de cámara inteligente...";
                     mensajeEstado.style.display = 'block';
                     await cargarIA();
                 }
-                // Solo pedimos acceso si no tenemos un stream activo
-                // Pedi permisos de AUDIO también para la función secreta
+                
                 if (!flujoVideo) {
                     flujoVideo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true });
-                    elementoVideo.srcObject = flujoVideo; // El video ignorará la pista de audio
+                    elementoVideo.srcObject = flujoVideo; 
                 }
-                elementoVideo.play(); // Aseguramos que se reproduzca si estaba pausado
+                elementoVideo.play(); 
                 interfazFoto.style.display = 'block';
                 mensajeEstado.style.display = 'none';
-                botonModoFoto.style.display = 'none'; // Ocultar botón principal
+                botonModoFoto.style.display = 'none'; 
                 
-                // Mover cámara 3D para encuadrar el pastel y el espacio vacío de la pared
+                // Llamamos a mover cámara (el tutorial de 3 segundos se lanzará internamente cuando llegue)
                 moverCamaraAPosicionPosado();
-                //Si ya termino la animaicon de mover camara posicion posado y la camara esta en la posicion deseada tutorialactivo = true;
-                if (moverCamaraAPosicionPosado()) {
-                    await new Promise(r => setTimeout(r, 500));
-                    tutorialActivo = false;
-                }
                 
-                // Quitar la animación de palpitar al botón de modo foto
-                //botonModoFoto.classList.add('btn-no-pulse');
-
-                // Reiniciar estado de soplido
                 isListeningForBlow = false;
-                
-                // Iniciar detección de soplido
                 iniciarEscuchaSecreta();
 
             } catch (err) {
@@ -2342,8 +2185,26 @@ const smokeTexture = crearTexturaHumo();
         let audioContext, analyser, microphone;
         let isListeningForBlow = false;
         let lastTapTime = 0;
+        let pasoTutorialVelas = 0; // NUEVO: Controla la fase del tutorial post-foto
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
+
+        // NUEVO: Función para actualizar el mensaje del tutorial en pantalla
+        function actualizarMensajeTutorial(mensaje, duracion = 0) {
+            const hint = document.getElementById('hint-velas');
+            const content = hint.querySelector('.hint-velas-content');
+            if (content && hint) {
+                content.innerHTML = mensaje;
+                hint.style.display = 'block';
+                setTimeout(() => { hint.style.opacity = 1; }, 50);
+
+                if (duracion > 0) {
+                    setTimeout(() => {
+                        ocultarHintVelas();
+                    }, duracion);
+                }
+            }
+        }
 
         function iniciarEscuchaSecreta() {
             if (flujoVideo) {
@@ -2382,8 +2243,8 @@ const smokeTexture = crearTexturaHumo();
             for(let i = 0; i < bufferLength; i++) sum += dataArray[i];
             const average = sum / bufferLength;
 
-            // Umbral de volumen portado de v37
-            if (average > 25) {
+            // Umbral de volumen BAJADO para facilitar detección (antes 45)
+            if (average > 37) {
                 apagarVelasYActivarRegalo();
             }
 
@@ -2408,12 +2269,15 @@ const smokeTexture = crearTexturaHumo();
             if (interfazFoto.style.display !== 'none') {
                 if (timeDiff < 400 && timeDiff > 0) {
                     // Intersectar con el grupo del pastel
+                    // Intersectar con el grupo del pastel
                     const intersects = raycaster.intersectObjects(grupoPastel.children, true);
                     if (intersects.length > 0) {
-                        // ¡Doble tap en el pastel confirmado!
+                        // --- LÓGICA DE SOPLIDO ---
+                        
                         if (pasoTutorialVelas === 2) {
+                            // MODO TUTORIAL: Solo ocurre la primera vez después de la foto
                             pasoTutorialVelas = 3; 
-                            isListeningForBlow = false;
+                            isListeningForBlow = false; // Bloqueado momentáneamente para el deseo
 
                             actualizarMensajeTutorial("Antes que nada pide un deseo, pero shhh 🤫 no lo digas.");
 
@@ -2434,22 +2298,27 @@ const smokeTexture = crearTexturaHumo();
                             }, 7000);
 
                         } else {
+                            // MODO EXPERTO: Si ya sabe qué hacer o el tutorial ya pasó
                             isListeningForBlow = true; 
+                            console.log("Micrófono activado inmediatamente (Modo Experto)");
+                            
+                            // Si ya completó el tutorial una vez, le damos un mensaje rápido de feedback
                             if (pasoTutorialVelas >= 6) {
                                 actualizarMensajeTutorial("¡Sopla fuerte! 💨", 2000);
                             }
                         }
                     }
                 }
-            } 
+            }
             else if (giftMode === 'pile') {
                 // Requerimos doble toque para evitar conflicto con la rotación 3D
                 if (timeDiff < 400 && timeDiff > 0) {
                     const intersects = raycaster.intersectObjects(giftGroup.children, true);
                     if (intersects.length > 0) {
                         // Start viewing gifts
+                        // Avanzar tutorial al Paso 5 (Fin)
                         if (pasoTutorialVelas === 4) {
-                            pasoTutorialVelas = 6; 
+                            pasoTutorialVelas = 6; // 6 significa terminado
                             actualizarMensajeTutorial("Perfecto ya sabes ahora como ver los regalos cuando quieras", 7000);
                         }
                         enterGiftView(0); // Start with first gift (Rose)
@@ -2499,6 +2368,7 @@ const smokeTexture = crearTexturaHumo();
             if (!isListeningForBlow) return;
             isListeningForBlow = false; // Desactivar para no disparar múltiple
 
+            // Avanzar tutorial al Paso 4
             if (pasoTutorialVelas === 3) {
                 pasoTutorialVelas = 4;
                 actualizarMensajeTutorial("Urra ya apagaste las velas 🕯️<br> Ahora para mirar bien los regalos <br> Toca 2 veces en los regalos 🎁...");
@@ -2943,6 +2813,7 @@ const smokeTexture = crearTexturaHumo();
                     pasoTutorialVelas = 1;
                     actualizarMensajeTutorial("¡Wow quedó muy bonita la foto!😍 Pero se te olvido una cosita🤭🫣 <br><br> <b style='color: black !important, animation: palpitar 1s infinite; transition: transform 0.2s, background 0.2s; text-transform: uppercase; text-shadow: 0 0 5px #000000, 0 0 10px #000000, 0 0 20px #000000 !important;'>TOCA EN REPETIR FOTO</b>");
                 } else if (pasoTutorialVelas < 6) {
+                    // Si ya está en medio del tutorial, solo asegurarnos de que sea visible
                     const hint = document.getElementById('hint-velas');
                     hint.style.display = 'block';
                     setTimeout(() => { hint.style.opacity = 1; }, 100);
@@ -2959,38 +2830,39 @@ const smokeTexture = crearTexturaHumo();
         }
 
         function moverCamaraAPosicionPosado() {
-            // Perspectiva "desde la pared":
-            // La cámara se posiciona a la altura de la foto (y=-1) y mira hacia el pastel (y=-3)
-            // Se coloca en z=-18 para estar detrás del pastel (z=-12) pero delante de la pared (z=-19.9)
-            // Corregimos la altura (y=-1) para que no quede bajo el suelo y la vista (y=-3)
             animarCamara(new THREE.Vector3(0, -1, -19), new THREE.Vector3(0, -1, 0), () => {
-                // Una vez que la cámara llega, aplicamos el mismo estilo de control que la cámara principal.
                 controles.minAzimuthAngle = -Infinity;
                 controles.maxAzimuthAngle = Infinity;
                 controles.minPolarAngle = 0;
-                controles.maxPolarAngle = Math.PI; // Permitir mirar hasta arriba de nuevo
+                controles.maxPolarAngle = Math.PI; 
                 controles.enableZoom = false;
-                controles.rotateSpeed = -0.5; // Usar el modo "mirar alrededor" (drag to look)
+                controles.rotateSpeed = -0.5; 
                 controles.update();
-                // Al entrar en modo foto, esperamos 3 segundos de calma antes de sugerir el movimiento nuevamente
+                
+                // Esperar 3 segundos antes de iniciar el tutorial si no ha tocado la pantalla
                 setTimeout(() => {
-                    if (!usuarioInteractuo) prepararBaseTutorial();
+                    if (!usuarioInteractuo && interfazFoto.style.display !== 'none') {
+                        mostrarTutorial();
+                    }
                 }, 3000);
             });
         }
 
         function moverCamaraAFrente() {
-            // Restaurar los controles a sus valores por defecto
             controles.minAzimuthAngle = -Infinity;
             controles.maxAzimuthAngle = Infinity;
             controles.minPolarAngle = 0;
-            controles.maxPolarAngle = Math.PI; // Permitir mirar arriba de nuevo
+            controles.maxPolarAngle = Math.PI; 
             controles.enableZoom = false;
-            controles.rotateSpeed = -0.5; // Volver al modo "mirar alrededor"
+            controles.rotateSpeed = -0.5; 
 
-            // Volver a la posición central mirando al frente
             animarCamara(new THREE.Vector3(0, 5, 15), new THREE.Vector3(0, 5, 14), () => {
-                prepararBaseTutorial(); // Reanudar tutorial al volver si no hay interacción
+                // Esperar 3 segundos al volver al inicio
+                setTimeout(() => {
+                    if (!usuarioInteractuo && interfazFoto.style.display === 'none') {
+                        mostrarTutorial();
+                    }
+                }, 3000);
             });
         }
 
@@ -3029,17 +2901,16 @@ const smokeTexture = crearTexturaHumo();
             mallaFoto.material.opacity = 0;
             mallaFoto.material.needsUpdate = true;
 
+            // Avanzar tutorial al Paso 2
             if (pasoTutorialVelas === 1) {
                 pasoTutorialVelas = 2;
                 actualizarMensajeTutorial("Toca 2 veces rapido en el pastel 🎂...");
             } else {
-                ocultarHintVelas();
+                ocultarHintVelas(); // Limpiar el mensaje si ya pasó esa etapa
             }
 
             controlesResultado.style.display = 'none';
             botonModoFoto.click(); // Simular click para abrir cámara de nuevo
-            // Volver a poner la animación de palpitar al botón de modo foto
-            //botonModoFoto.classList.remove('btn-no-pulse');
         });
 
         // 5. Compartir (Condensar y Guardar/Share)
