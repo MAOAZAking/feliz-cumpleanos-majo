@@ -644,9 +644,12 @@
         <div class="tutorial-text">Desliza para mirar a tu alrededor</div>
     </div>
 
-    <!-- Tutorial de Velas Dinámico (Portado de v37) -->
+    <!-- Tutorial de Velas (Se activa tras tomar la foto) -->
     <div id="hint-velas">
-        <div class="hint-velas-content"></div>
+        <div class="hint-velas-content">
+            ¡Quedó muy bien la foto! Pero no apagaste las velas... <br><br>
+            Toca 2 veces el pastel y sopla para ver tus regalos 🎂💨
+        </div>
     </div>
 
     <div id="mensaje-estado"></div>
@@ -937,6 +940,30 @@
         const grupoPastel = new THREE.Group();
         grupoPastel.position.set(0, -4.15, -12);
 
+        // --- Definición de Geometría Procedural para PC (Más detallado) ---
+        function crearTrozosChocolateRelieve(cakeBodyHeight, cakeRadius) {
+            const numTrozos = isMobile ? 0 : 50; // No trozos en móvil
+            const chocolateColor = 0xFFF8DC; // Crema/Blanco amarillento (mismo que el cuerpo)
+            const matChocolate = new THREE.MeshStandardMaterial({
+                color: chocolateColor,
+                roughness: 0.8, // Mate
+            });
+            const chocolateGeometry = new THREE.BoxGeometry(0.1, 0.5, 0.1); // Pequeños bloques
+
+            for (let i = 0; i < numTrozos; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const radius = cakeRadius + (Math.random() - 0.5) * 0.1; // Variación sutil del radio
+                const y = Math.random() * cakeBodyHeight;
+                const rotation = Math.random() * Math.PI * 2;
+                
+                const trozo = new THREE.Mesh(chocolateGeometry, matChocolate);
+                trozo.position.set(Math.cos(angle) * radius, y, Math.sin(angle) * radius);
+                trozo.rotation.set(rotation, rotation, rotation); // Rotación aleatoria en todos los ejes
+                trozo.castShadow = true;
+                grupoPastel.add(trozo);
+            }
+        }
+
         function crearFrutosRelieve(toppingRadius) {
             const numFrutos = isMobile ? 0 : 30; // No frutos en móvil
             const frutoColorBase = 0x8B0000; // Rojo oscuro
@@ -973,38 +1000,8 @@
             roughness: isMobile ? 0.9 : 0.6,
         });
 
-        // Cuerpo del Pastel con Relieve Irregular (Mucho más liviano que usar mallas separadas)
-        const geoPastel = new THREE.CylinderGeometry(
-            radioCuerpo, 
-            radioCuerpo, 
-            alturaCuerpo, 
-            isMobile ? 32 : 128, // Más segmentos para un relieve suave
-            isMobile ? 2 : 24    // Segmentos de altura
-        ); 
-
-        // Aplicar protuberancias y relieve aleatorio directamente a los vértices
-        if (!isMobile) {
-            const posAttr = geoPastel.attributes.position;
-            const vTemp = new THREE.Vector3();
-            for (let i = 0; i < posAttr.count; i++) {
-                vTemp.fromBufferAttribute(posAttr, i);
-                
-                // Deformar solo superficie lateral y superior (evitar base para que no flote)
-                if (vTemp.y > -(alturaCuerpo / 2) + 0.05) {
-                    const protu = Math.random() * 0.12; // Intensidad del relieve lateral
-                    const ang = Math.atan2(vTemp.z, vTemp.x);
-                    if (Math.abs(vTemp.x) > 0.1 || Math.abs(vTemp.z) > 0.1) {
-                        vTemp.x += Math.cos(ang) * protu;
-                        vTemp.z += Math.sin(ang) * protu;
-                    }
-                    // Subidas y bajadas aleatorias
-                    vTemp.y += (Math.random() - 0.5) * 0.1;
-                    posAttr.setXYZ(i, vTemp.x, vTemp.y, vTemp.z);
-                }
-            }
-            geoPastel.computeVertexNormals();
-        }
-
+        // Cuerpo del Pastel
+        const geoPastel = new THREE.CylinderGeometry(radioCuerpo, radioCuerpo, alturaCuerpo, isMobile ? 24 : 40); 
         const cuerpoPastel = new THREE.Mesh(geoPastel, matCuerpoLiso);
         cuerpoPastel.position.y = alturaCuerpo / 2; // Pivote en la base
         cuerpoPastel.castShadow = true;
@@ -1012,7 +1009,7 @@
 
         // Decoración superior (Dona blanca gruesa)
         const radioTorus = 2.35; 
-        const grosorTorus = 0.19; 
+        const grosorTorus = 0.18; 
         const geoTorus = new THREE.TorusGeometry(radioTorus, grosorTorus, 16, isMobile ? 32 : 50); 
         geoTorus.rotateX(Math.PI / 2); 
         const matTorus = new THREE.MeshBasicMaterial({ color: 0xFAFAF2 }); 
@@ -1033,6 +1030,7 @@
         grupoPastel.add(salsaFrutosRojos);
 
         if (!isMobile) {
+            crearTrozosChocolateRelieve(alturaCuerpo, radioCuerpo);
             crearFrutosRelieve(2.3);
         }
         escena.add(grupoPastel);
@@ -1761,62 +1759,43 @@
         const cargadorFuentes = new FontLoader();
         cargadorFuentes.load('https://unpkg.com/three@0.160.0/examples/fonts/helvetiker_regular.typeface.json', function (fuente) {
             
-            // Configuración de los números de las velas
-            const numeroVelaIzq = "2";
-            const numeroVelaDer = "2";
+            // Mechas y Llamas
+            const crearLlama = (x) => {
+                const grupoLlama = new THREE.Group();
 
-            // Función para crear velas con números integrados
-            const crearVelaNumero = (x, valor, fuente) => {
-                const grupoVela = new THREE.Group();
-
-                // 1. Número 3D (Cuerpo de la vela)
-                const geoNum = new TextGeometry(valor, {
-                    font: fuente,
-                    size: 1.0,
-                    height: 0.2,
-                });
-                geoNum.center();
-                const mallaNum = new THREE.Mesh(geoNum, new THREE.MeshStandardMaterial({metalness: 0.3, roughness: 0.2, color: 0xFFF800}));
-                mallaNum.castShadow = true;
-                grupoVela.add(mallaNum);
-
-                // Calcular el punto más alto del número para la llama
-                const cajaVela = new THREE.Box3().setFromObject(mallaNum);
-                const yTope = cajaVela.max.y;
-
-                // 2. Mecha
-                const mecha = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.2), new THREE.MeshBasicMaterial({color:0x000000}));
-                mecha.position.y = yTope + 0.1;
-                grupoVela.add(mecha);
+                const mecha = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.3), new THREE.MeshBasicMaterial({color:0x000000}));
+                grupoLlama.add(mecha);
                 
-                // 3. Llama
-                const llamaExt = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 16), new THREE.MeshBasicMaterial({ color: 0xFF6600, transparent: true, opacity: 0.8 }));
-                const llamaInt = new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 16), new THREE.MeshBasicMaterial({ color: 0xFFD700 }));
-                llamaExt.position.y = yTope + 0.3;
-                llamaInt.position.y = yTope + 0.25;
-                grupoVela.add(llamaExt, llamaInt);
+                const llamaExterior = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 16), new THREE.MeshBasicMaterial({ color: 0xFF6600, transparent: true, opacity: 0.8 }));
+                const llamaInterior = new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 16), new THREE.MeshBasicMaterial({ color: 0xFFD700 }));
+                llamaExterior.position.y = 0.25;
+                llamaInterior.position.y = 0.2;
+                grupoLlama.add(llamaExterior, llamaInterior);
 
-                // Luz que emite la llama
-                const luz = new THREE.PointLight(0xffaa33, isMobile ? 0.4 : 0.7, 4, 2);
-                luz.position.y = yTope + 0.35;
-                grupoVela.add(luz);
+                // Luz que emite la vela
+                const luzVela = new THREE.PointLight(0xffaa33, isMobile ? 0.4 : 0.7, 4, 2);
+                luzVela.position.y = 0.4;
+                grupoLlama.add(luzVela);
                 
-                candleLights.push(luz);
-                flameMeshes.push(llamaExt, llamaInt);
+                candleLights.push(luzVela);
+                // flameMeshes.push(grupoLlama); // ANTES: Guardaba todo el grupo (incluida la mecha)
+                // AHORA: Guardamos solo las partes de fuego para ocultar solo eso
+                flameMeshes.push(llamaExterior);
+                flameMeshes.push(llamaInterior);
 
-                // Posicionamos el grupo sobre la superficie del pastel (alturaCuerpo es 3.0)
-                grupoVela.position.set(x, 2.15 + (yTope - cajaVela.min.y) / 2, 0);
-                grupoPastel.add(grupoVela);
+                grupoLlama.position.set(x, 2.0, 0);
+                grupoPastel.add(grupoLlama);
                 
+                // Guardamos para el loop principal
                 llamasParaAnimar.push({
-                    exterior: llamaExt,
-                    interior: llamaInt,
+                    exterior: llamaExterior,
+                    interior: llamaInterior,
                     x: x
                 });
             };
 
-            crearVelaNumero(-0.45, numeroVelaIzq, fuente); 
-            crearVelaNumero(0.45, numeroVelaDer, fuente);  
+            crearLlama(-0.4); 
+            crearLlama(0.4);  
 
             // --- CREAR EL RELOJ DE PARED ---
             crearReloj(fuente);
@@ -2211,51 +2190,19 @@ const smokeTexture = crearTexturaHumo();
             // Primero movemos la cámara suavemente al punto de inicio del barrido
             animarCamara(targetStartPos, controles.target, () => {
                 if (usuarioInteractuo) return;
+                // Una vez en el extremo, fijamos los valores y empezamos la oscilación
                 anguloTutorialBase = baseAzimuth;
                 tutorialDistance = dist;
                 tutorialY = y;
                 inversionTutorial = inversion;
                 startTimeTutorial = Date.now();
                 tutorialActivo = true;
-
-                if (hint) {
-                    reiniciarAnimacionesCSS(hint);
-                    hint.style.display = 'flex';
-                    setTimeout(() => { hint.style.opacity = 1; }, 50);
-                }
             });
         }
         let tutorialDistance = 15;
         let tutorialY = 5;
         let inversionTutorial = 1;
         let usuarioInteractuo = false;
-        let pasoTutorialVelas = 0; // Control de fases del tutorial (Portado de v37)
-
-        // Función para reiniciar el tiempo de la animación CSS clonando el nodo (Fix Emoji)
-        function reiniciarAnimacionesCSS(hintElement) {
-            const oldHand = hintElement.querySelector('.hand-animation');
-            if (oldHand) {
-                const newHand = oldHand.cloneNode(true);
-                oldHand.parentNode.replaceChild(newHand, oldHand);
-            }
-        }
-
-        // Función para actualizar el mensaje del tutorial en pantalla
-        function actualizarMensajeTutorial(mensaje, duracion = 0) {
-            const hint = document.getElementById('hint-velas');
-            const content = hint.querySelector('.hint-velas-content');
-            if (content && hint) {
-                content.innerHTML = mensaje;
-                hint.style.display = 'block';
-                setTimeout(() => { hint.style.opacity = 1; }, 50);
-
-                if (duracion > 0) {
-                    setTimeout(() => {
-                        ocultarHintVelas();
-                    }, duracion);
-                }
-            }
-        }
 
 
         // --- Inicializar IA ---
@@ -2382,8 +2329,8 @@ const smokeTexture = crearTexturaHumo();
             for(let i = 0; i < bufferLength; i++) sum += dataArray[i];
             const average = sum / bufferLength;
 
-            // Umbral de volumen portado de v37
-            if (average > 25) {
+            // Umbral de volumen BAJADO para facilitar detección (antes 45)
+            if (average > 10) {
                 apagarVelasYActivarRegalo();
             }
 
@@ -2411,34 +2358,7 @@ const smokeTexture = crearTexturaHumo();
                     const intersects = raycaster.intersectObjects(grupoPastel.children, true);
                     if (intersects.length > 0) {
                         // ¡Doble tap en el pastel confirmado!
-                        if (pasoTutorialVelas === 2) {
-                            pasoTutorialVelas = 3; 
-                            isListeningForBlow = false;
-
-                            actualizarMensajeTutorial("Antes que nada pide un deseo, pero shhh 🤫 no lo digas.");
-
-                            setTimeout(() => {
-                                if (pasoTutorialVelas !== 3) return;
-                                actualizarMensajeTutorial("<center>¿Lista?🤔</center>");
-
-                                setTimeout(() => {
-                                    if (pasoTutorialVelas !== 3) return;
-                                    actualizarMensajeTutorial("ahora si sopla muy fuerte 💨...");
-
-                                    setTimeout(() => {
-                                        if (pasoTutorialVelas !== 3) return;
-                                        isListeningForBlow = true; 
-                                        console.log("Micrófono activado (Tutorial)");
-                                    }, 2000);
-                                }, 4000);
-                            }, 7000);
-
-                        } else {
-                            isListeningForBlow = true; 
-                            if (pasoTutorialVelas >= 6) {
-                                actualizarMensajeTutorial("¡Sopla fuerte! 💨", 2000);
-                            }
-                        }
+                        isListeningForBlow = true;
                     }
                 }
             } 
@@ -2448,10 +2368,6 @@ const smokeTexture = crearTexturaHumo();
                     const intersects = raycaster.intersectObjects(giftGroup.children, true);
                     if (intersects.length > 0) {
                         // Start viewing gifts
-                        if (pasoTutorialVelas === 4) {
-                            pasoTutorialVelas = 6; 
-                            actualizarMensajeTutorial("Perfecto ya sabes ahora como ver los regalos cuando quieras", 7000);
-                        }
                         enterGiftView(0); // Start with first gift (Rose)
                     }
                 }
@@ -2499,12 +2415,7 @@ const smokeTexture = crearTexturaHumo();
             if (!isListeningForBlow) return;
             isListeningForBlow = false; // Desactivar para no disparar múltiple
 
-            if (pasoTutorialVelas === 3) {
-                pasoTutorialVelas = 4;
-                actualizarMensajeTutorial("Urra ya apagaste las velas 🕯️<br> Ahora para mirar bien los regalos <br> Toca 2 veces en los regalos 🎁...");
-            } else {
-                ocultarHintVelas();
-            }
+            ocultarHintVelas(); // Ocultar el mensaje tutorial inmediatamente
 
             // 1. Apagar luces y ocultar llamas
             candleLights.forEach(l => l.intensity = 0);
@@ -2939,14 +2850,9 @@ const smokeTexture = crearTexturaHumo();
         function mostrarHintVelas() {
             // Solo si las velas están prendidas (intensidad > 0)
             if (candleLights.length > 0 && candleLights[0].intensity > 0) {
-                if (pasoTutorialVelas === 0) {
-                    pasoTutorialVelas = 1;
-                    actualizarMensajeTutorial("¡Wow quedó muy bonita la foto!😍 Pero se te olvido una cosita🤭🫣 <br><br> <b style='color: black !important, animation: palpitar 1s infinite; transition: transform 0.2s, background 0.2s; text-transform: uppercase; text-shadow: 0 0 5px #000000, 0 0 10px #000000, 0 0 20px #000000 !important;'>TOCA EN REPETIR FOTO</b>");
-                } else if (pasoTutorialVelas < 6) {
-                    const hint = document.getElementById('hint-velas');
-                    hint.style.display = 'block';
-                    setTimeout(() => { hint.style.opacity = 1; }, 100);
-                }
+                const hint = document.getElementById('hint-velas');
+                hint.style.display = 'block';
+                setTimeout(() => { hint.style.opacity = 1; }, 100);
             }
         }
 
@@ -3029,12 +2935,7 @@ const smokeTexture = crearTexturaHumo();
             mallaFoto.material.opacity = 0;
             mallaFoto.material.needsUpdate = true;
 
-            if (pasoTutorialVelas === 1) {
-                pasoTutorialVelas = 2;
-                actualizarMensajeTutorial("Toca 2 veces rapido en el pastel 🎂...");
-            } else {
-                ocultarHintVelas();
-            }
+            ocultarHintVelas(); // Limpiar el mensaje si decide repetir la foto
 
             controlesResultado.style.display = 'none';
             botonModoFoto.click(); // Simular click para abrir cámara de nuevo
