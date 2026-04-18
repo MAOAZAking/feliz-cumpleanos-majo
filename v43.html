@@ -25,11 +25,11 @@
         }
         
         /* Ajustes para móviles */
-        body.is-mobile .btn:not(.gift-nav-btn):not(.cerrar-camara):not(.btn-icon) {
+        @media (max-width: 600px) {
+            .btn {
                 padding: 15px 30px;
                 font-size: 20px;
                 width: 80%;
-                max-width: 300px;
                 border: solid 3px black;
             }
             /* Botón modo foto más grande en móvil */
@@ -38,7 +38,7 @@
                 font-size: 24px !important;
                 width: 90% !important;
                 left: 50% !important;
-                /*transform: translateX(-6.45%); */    
+                transform: translateX(-6.45%);     
                 /* Animación de palpitar */
                 animation: palpitar 1s infinite;
                 }
@@ -52,18 +52,9 @@
                     transform: scale(1.1); /* Aumenta tamaño al 110% */
                 }
                 }
-            /* Botón de captura más grande, cómodo y perfectamente circular */
-            body.is-mobile .btn-icon {
-                width: 95px; 
-                height: 95px; 
-                font-size: 40px !important;
-                padding: 0 !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-                border-radius: 50% !important;
-                line-height: 1 !important;
-            }
+            #interfaz-foto { width: 70vw; height: 40vh; left: 15vw; }
+            .btn-icon { width: 70px; height: 70px; }
+            #cargando { font-size: 18px; text-align: center; padding: 20px; }
             #controles-resultado {
                 display: none; /* Se muestra después de tomar la foto */
                 pointer-events: auto;
@@ -73,6 +64,7 @@
                 transform: translateX(-0.5%);
                 width: 90%;
             }
+        }
         #boton-modo-foto{
             left: 50%;
             transform: translateX(-6.45%);
@@ -159,22 +151,8 @@
             font-size: 24px !important;
             border: 2px solid white !important;
         }
-        /* Ajuste de navegación para móviles (Círculos perfectos) */
-        body.is-mobile .gift-nav-btn {
-            width: 70px !important;
-            height: 70px !important;
-            padding: 0 !important;
-            border-radius: 50% !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-        }
-        body.is-mobile #btn-prev-gift { left: 10px !important; transform: translateY(-50%) !important; }
-        body.is-mobile #btn-next-gift { right: 10px !important; transform: translateY(-50%) !important; left: auto !important; }
-        
-        #btn-prev-gift { left: 20px; background: rgba(0, 91, 227, 0.8) !important; animation: none !important; }
-        #btn-next-gift { right: 20px; background: rgba(26, 171, 0, 0.8) !important; animation: none !important; }
-
+        #btn-prev-gift { left: 20px; background: rgba(0, 91, 227, 0.8) !important; }
+        #btn-next-gift { right: 20px; background: rgba(26, 171, 0, 0.8) !important; }
 
         /* Botones de acción de regalos (Inferior Centro) */
         .gift-action-btn {
@@ -188,14 +166,14 @@
             background: rgba(222, 131, 255, 0.9) !important;
             border: 2px solid white !important;
         }
-        body.is-mobile .gift-action-btn { left: 50% !important; transform: translateX(-50%) !important; width: 65% !important; min-width: 260px; }
 
         /* Modo Foto UI */
         #interfaz-foto {
             display: none;
             position: absolute;
-            top: 10px;
-            width: 150px;
+            top: 20px; 
+            left: 20px; 
+            width: 150px; 
             height: 200px;
             background: #000;
             border: 4px solid white;
@@ -204,33 +182,6 @@
             z-index: 10;
             pointer-events: auto;
         }
-
-        /* Clases dinámicas para mover la cámara según inclinación en móvil */
-        body.is-mobile #interfaz-foto {
-            width: 37.5vw; /* Escala reducida a la mitad */
-            height: 25vh;  /* Escala reducida a la mitad */
-            left: 50%;
-            transform: translateX(-50%);
-        }
-
-        body.is-mobile #interfaz-foto.camara-derecha {
-            left: auto !important;
-            right: 10px !important; /* Margen de 10px */
-            width: 17.5vw; /* Escala reducida a la mitad */
-            height: 37.5vh; /* Escala reducida a la mitad */
-            top: 50%;
-            transform: translateY(-50%) !important;
-        }
-
-        body.is-mobile #interfaz-foto.camara-izquierda {
-            left: 10px !important; /* Margen de 10px */
-            right: auto !important;
-            width: 17.5vw; /* Escala reducida a la mitad */
-            height: 37.5vh; /* Escala reducida a la mitad */
-            top: 50%;
-            transform: translateY(-50%) !important;
-        }
-
         #transmision-camara {
             width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); border-radius: 6px;
         }
@@ -240,17 +191,11 @@
         }
         .cerrar-camara {
             position: absolute; top: 2px; right: 2px;
-            background: rgba(255, 0, 0, 0.8); color: white; width: 50px; height: 50px; 
-            border-radius: 50%; font-size: 24px; border: 2px solid white; 
-            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            background: rgba(255, 0, 0, 0.8); color: white; width: 40px; height: 40px; 
+            border-radius: 50%; font-size: 20px; border: 2px solid white; 
+            cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0 0 4px 0;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
             z-index: 20;
-            padding: 0 !important;
-        }
-        body.is-mobile .cerrar-camara {
-            width: 70px !important;
-            height: 70px !important;
-            font-size: 35px !important;
         }
         #btn-close-view {
             background: rgba(255, 0, 0, 0.8) !important;
@@ -751,7 +696,7 @@
     </div>
 
     <!-- Botón de Cerrar/Volver (Ahora fuera del gift-ui para usarlo en la pila también) -->
-    <button id="btn-close-view" class="btn btn-no-pulse cerrar-camara" style="position:absolute; top:10px; right:10px; pointer-events:auto; z-index:1001; display: none;">✕</button>
+    <button id="btn-close-view" class="btn btn-no-pulse cerrar-camara" style="position:absolute; top:20px; right:25px; pointer-events:auto; z-index:1001; display: none;">✕</button>
 
     <!-- UI Secreta de Regalos -->
     <div id="gift-ui" style="display: none;">
@@ -802,12 +747,6 @@
 
         // --- DETECCIÓN DE DISPOSITIVO Y RENDIMIENTO ---
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        if (isMobile) {
-            document.body.classList.add('is-mobile');
-            // Escuchar cambios de orientación
-            window.addEventListener('orientationchange', actualizarUbicacionCamara);
-            screen.orientation?.addEventListener('change', actualizarUbicacionCamara);
-        }
 
         const camara = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
         const renderizador = new THREE.WebGLRenderer({ 
@@ -1601,7 +1540,7 @@
 
             // Cargamos la textura de la rosa azul
             const cargadorTextura = new THREE.TextureLoader();
-            const texturaLienzo = cargadorTextura.load('img/cuadro/cuadro_de_la_casa_de_majo_bajo_contraste.jpeg');
+            const texturaLienzo = cargadorTextura.load('img/cuadro/cuadro_de_la_casa_de_majo.jpeg');
             texturaLienzo.colorSpace = THREE.SRGBColorSpace; // Asegura que los colores se vean reales
 
             // Aplicamos la textura al lienzo en lugar de un color plano
@@ -2322,30 +2261,6 @@
         // Iniciamos la carga de la IA
         cargarIA();
 
-        function actualizarUbicacionCamara() {
-            if (!isMobile) return;
-            
-            // screen.orientation.angle: 
-            // 90 = Landscape Left (Botón home/barra a la derecha) -> Ponemos UI a la DERECHA
-            // 270 o -90 = Landscape Right (Botón home/barra a la izquierda) -> Ponemos UI a la IZQUIERDA
-            // 0 o 180 = Portrait
-            const angulo = (screen.orientation && screen.orientation.angle !== undefined) 
-                           ? screen.orientation.angle 
-                           : (window.orientation || 0);
-
-            const interfaz = document.getElementById('interfaz-foto');
-            if (!interfaz) return;
-
-            interfaz.classList.remove('camara-derecha', 'camara-izquierda');
-
-            if (angulo === 90) {
-                interfaz.classList.add('camara-derecha');
-            } else if (angulo === 270 || angulo === -90) {
-                interfaz.classList.add('camara-izquierda');
-            }
-        }
-
-
         // 1. Abrir Modo Foto
         botonModoFoto.addEventListener('click', async () => {
             try {
@@ -2369,8 +2284,6 @@
                     flujoVideo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true });
                     elementoVideo.srcObject = flujoVideo; // El video ignorará la pista de audio
                 }
-                
-                actualizarUbicacionCamara();
                 elementoVideo.play(); // Aseguramos que se reproduzca si estaba pausado
                 interfazFoto.style.display = 'block';
                 mensajeEstado.style.display = 'none';
@@ -2378,6 +2291,11 @@
                 
                 // Mover cámara 3D para encuadrar el pastel y el espacio vacío de la pared
                 moverCamaraAPosicionPosado();
+                //Si ya termino la animaicon de mover camara posicion posado y la camara esta en la posicion deseada tutorialactivo = true;
+                if (moverCamaraAPosicionPosado()) {
+                    await new Promise(r => setTimeout(r, 500));
+                    tutorialActivo = false;
+                }
                 
                 // Quitar la animación de palpitar al botón de modo foto
                 //botonModoFoto.classList.add('btn-no-pulse');
@@ -2994,7 +2912,7 @@
                 controles.update();
                 // Al entrar en modo foto, esperamos 3 segundos de calma antes de sugerir el movimiento nuevamente
                 setTimeout(() => {
-                    if (!usuarioInteractuo && !isMobile) prepararBaseTutorial();
+                    if (!usuarioInteractuo) prepararBaseTutorial();
                 }, 3000);
             });
         }
@@ -3010,7 +2928,7 @@
 
             // Volver a la posición central mirando al frente
             animarCamara(new THREE.Vector3(0, 5, 15), new THREE.Vector3(0, 4.8, 14), () => {
-                if (!isMobile) prepararBaseTutorial(); // Reanudar tutorial al volver si no hay interacción
+                prepararBaseTutorial(); // Reanudar tutorial al volver si no hay interacción
             });
         }
 
@@ -3150,7 +3068,7 @@
                 } else if (t > 2.5 && t < 6.5) {
                     // Pausa en el extremo opuesto (-0.08)
                     offset = 0.08;
-                } else if (t >= 6.5 && t <= 8.25) {
+                } else if (t >= 6.5 && t <= 8.0) {
                     // Barrido fluido: Regreso al punto inicial (-0.08 a 0.08)
                     const norm = (t - 6.5) / 1.5;
                     offset = 0.08 * Math.cos(norm * Math.PI);
