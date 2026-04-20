@@ -2,12 +2,13 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <link rel="icon" href="img/caja_de_regalo.png">
     <title>Feliz Cumple #22 Majo</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #333; font-family: 'Arial', sans-serif; }
         #canvas-container { width: 100vw; height: 100vh; display: block; }
+        :root { --nav-display: flex; }
         
         /* UI Overlay General */
         .ui-layer {
@@ -158,6 +159,7 @@
             justify-content: center;
             font-size: 24px !important;
             border: 2px solid white !important;
+            display: none; /* Dejar que JS controle la visibilidad */
         }
         /* Ajuste de navegación para móviles (Círculos perfectos) */
         body.is-mobile .gift-nav-btn {
@@ -165,7 +167,7 @@
             height: 70px !important;
             padding: 0 !important;
             border-radius: 50% !important;
-            display: flex !important;
+            display: flex; /* Quitamos !important para permitir que JS los oculte */
             align-items: center !important;
             justify-content: center !important;
         }
@@ -192,11 +194,12 @@
 
         /* Modo Foto UI */
         #interfaz-foto {
+            left: 20px;
             display: none;
             position: absolute;
-            top: 10px;
-            width: 250px;
-            height: 200px;
+            top: 25px;
+            width: 250px; /* Tamaño PC */
+            height: 180px;
             background: #000;
             border: 4px solid white;
             border-radius: 10px;
@@ -207,17 +210,18 @@
 
         /* Clases dinámicas para mover la cámara según inclinación en móvil */
         body.is-mobile #interfaz-foto {
-            width: 65vw; /* Escala reducida a la mitad */
-            height: 25vh;  /* Escala reducida a la mitad */
+            width: 57vw; /* Ampliado para mejor visibilidad */
+            height: 23vh; 
             left: 50%;
+            top: 35px;
             transform: translateX(-50%);
         }
 
         body.is-mobile #interfaz-foto.camara-derecha {
             left: auto !important;
             right: 10px !important; /* Margen de 10px */
-            width: 17.5vw; /* Escala reducida a la mitad */
-            height: 37.5vh; /* Escala reducida a la mitad */
+            width: 35vw; /* Ampliado */
+            height: 55vh; 
             top: 50%;
             transform: translateY(-50%) !important;
         }
@@ -225,8 +229,8 @@
         body.is-mobile #interfaz-foto.camara-izquierda {
             left: 10px !important; /* Margen de 10px */
             right: auto !important;
-            width: 17.5vw; /* Escala reducida a la mitad */
-            height: 37.5vh; /* Escala reducida a la mitad */
+            width: 35vw; /* Ampliado */
+            height: 55vh; 
             top: 50%;
             transform: translateY(-50%) !important;
         }
@@ -235,18 +239,46 @@
             width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); border-radius: 6px;
         }
         .camera-controls {
-            position: absolute; bottom: -8vh; width: 100%;
-            display: flex; justify-content: center;
+            position: absolute; 
+            bottom: 0; /* Pegado al borde inferior */
+            left: 50%;
+            transform: translate(-50%, 50%); /* Centrado horizontal y verticalmente sobre el borde */
+            width: auto;
+            display: flex; 
+            justify-content: center;
+            z-index: 30;
         }
         .cerrar-camara {
-            position: absolute; top: -2vh; right: -9vw;
+            position: absolute;
             background: rgba(255, 0, 0, 0.8); color: white; width: 50px; height: 50px; 
             border-radius: 50%; font-size: 24px; border: 2px solid white; 
             cursor: pointer; display: flex; align-items: center; justify-content: center;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
             z-index: 20;
             padding: 0 !important;
+            /* Posición por defecto (Portrait) - Esquina superior derecha centrada en bordes */
+            top: 0;
+            right: 0;
+            transform: translate(50%, -50%);
         }
+
+        /* Ajustes específicos para las orientaciones horizontales en móvil */
+        body.is-mobile #interfaz-foto.camara-derecha .cerrar-camara {
+            top: 0% !important;
+            left: 0 !important;
+            right: auto !important;
+            /* Centrado en el borde izquierdo verticalmente */
+            transform: translate(-50%, -50%) !important;
+        }
+
+        body.is-mobile #interfaz-foto.camara-izquierda .cerrar-camara {
+            top: 0% !important;
+            right: 0 !important;
+            left: auto !important;
+            /* Centrado en el borde derecho verticalmente */
+            transform: translate(50%, -50%) !important; 
+        }
+
         body.is-mobile .cerrar-camara {
             width: 70px !important;
             height: 70px !important;
@@ -257,7 +289,14 @@
             color: white !important;
             border: 2px solid white !important;
             right: 10px !important;
-            top: 10px !important
+            top: 10px !important;
+            left: auto !important; /* Forzar esquina derecha */
+            transform: none !important;
+            margin: 0 !important;
+        }
+
+        #btn-action-gift{
+            left: 43%;
         }
 
         /* Botones de acción principales */
@@ -711,7 +750,8 @@
             "imports": {
                 "three": "./js/three.module.js",
                 "three/addons/": "./js/examples/jsm/",
-                "three/addons/loaders/GLTFLoader.js": "https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js"
+                "three/addons/loaders/GLTFLoader.js": "https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js",
+                "three/addons/loaders/DRACOLoader.js": "https://unpkg.com/three@0.160.0/examples/jsm/loaders/DRACOLoader.js"
             }
         }
     </script>
@@ -764,8 +804,8 @@
         </div>
         <div class="gift-controls">
             <button id="btn-prev-gift" class="btn gift-nav-btn btn-no-pulse" style="display:none;">⬅</button>
-            <center><button id="btn-action-gift" class="btn gift-action-btn" style="display:none;">Abrir 🎁</button></center>
-            <button id="btn-close-box" class="btn gift-action-btn" style="display:none; background:rgba(255, 80, 80, 0.9) !important;">Cerrar 📦</button>
+            <center><button id="btn-action-gift" class="btn gift-action-btn btn-neon" style="display:none;">Abrir 🎁</button></center>
+            <button id="btn-close-box" class="btn gift-action-btn" style="display:none; background:rgba(255, 80, 80, 0.9) !important; left:43%;">Cerrar 📦</button>
             <button id="btn-next-gift" class="btn gift-nav-btn btn-no-pulse" style="display:none;">➡</button>
         </div>
     </div>
@@ -788,6 +828,7 @@
         import { FontLoader } from 'three/addons/loaders/FontLoader.js';
         import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
         import TWEEN from 'https://unpkg.com/@tweenjs/tween.js@18.6.4/dist/tween.esm.js';
 
         // Importar el servicio de GitHub
@@ -796,7 +837,7 @@
 
         // --- CONFIGURACIÓN BOMBILLO ---
         // Modifica estos valores para mover el bombillo
-        const configBombillo = { x: 0, y: 13, z: 10 }; 
+        const configBombillo = { x: 0, y: 13, z: 5 }; 
 
         // --- Configuración Escena ---
         const contenedor = document.getElementById('contenedor-canvas');
@@ -2035,6 +2076,10 @@
         giftGroup.position.set(0, -3.5, -5); // ACERCADO Y BAJADO: Más cerca de la cámara y sobre la mesa
         escena.add(giftGroup);
 
+        // Configuración de cargador con Draco para optimizar modelos pesados (Rosa)
+        const dracoLoader = new DRACOLoader();
+        dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+
         let roseModel = null;
         let innerGiftModel = null;
         let giftBox = null;
@@ -2074,7 +2119,7 @@
 
             // Tapa Mesh
             const lidGeo = new THREE.BoxGeometry(4.2, 0.5, 4.2);
-            const lidMat = new THREE.MeshStandardMaterial({ color: 0xFFA500 }); // Naranja dorado
+            const lidMat = new THREE.MeshStandardMaterial({ color: 0xFFD700 }); // Naranja dorado
             const lid = new THREE.Mesh(lidGeo, lidMat);
             lid.castShadow = !isMobile;
             lidGroup.add(lid);
@@ -2100,6 +2145,7 @@
 
         // 2. Cargar Modelos GLB
         const cargadorRegalos = new GLTFLoader();
+        cargadorRegalos.setDRACOLoader(dracoLoader);
         
         function checkGiftsLoaded() {
             if (roseModel && letterMesh && giftBoxModel) {
@@ -2112,29 +2158,77 @@
             }
         }
 
-        // Rosa
-        cargadorRegalos.load('modelos_3d/rosa.glb', function(gltf) {
-            roseModel = gltf.scene;
-            roseModel.scale.set(1.5, 1.5, 1.5); // Ajustar escala
-            roseModel.position.set(2, 3.5, 0); // Encima de la carta y caja
-            roseModel.rotation.x = Math.PI / 8; // Acostada
-            roseModel.rotation.z = Math.PI / 2.25; // Acostada de lado
+        // --- LÓGICA DE CARGA PROGRESIVA DE LA ROSA ---
+        const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        const esUsoDatos = conn ? (conn.saveData || /cellular/i.test(conn.type) || (conn.effectiveType && conn.effectiveType.includes('3g'))) : false;
 
-            // --- CORRECCIÓN DE MATERIALES ---
-            roseModel.traverse((child) => {
-                if (child.isMesh) {
-                    child.castShadow = !isMobile;
-                    child.receiveShadow = !isMobile;
-                    if (child.material) {
-                        child.material.metalness = 0.0; 
-                        child.material.roughness = 0.7; 
+        // Definir la cola de carga según dispositivo y red
+        let colaRosa = ['modelos_3d/rosa_1k.glb']; // Siempre empezamos por el más liviano
+        
+        if (isMobile) {
+            if (!esUsoDatos) colaRosa.push('modelos_3d/rosa_4k.glb'); // Si es WiFi en móvil, sube a 4k
+        } else {
+            colaRosa.push('modelos_3d/rosa_4k.glb'); // En PC siempre carga al menos 4k
+            if (!esUsoDatos) colaRosa.push('modelos_3d/rosa_8k.glb'); // Si es WiFi en PC, sube a 8k
+        }
+
+        console.log(`Sistema Progresivo: Red ${esUsoDatos ? 'Datos' : 'WiFi'}. Cargando niveles:`, colaRosa);
+
+        async function cargarSiguienteNivelRosa() {
+            if (colaRosa.length === 0) return;
+            
+            const urlActual = colaRosa.shift();
+            
+            cargadorRegalos.load(urlActual, (gltf) => {
+                const nuevoModelo = gltf.scene;
+                
+                // Aplicar configuraciones de transformación
+                nuevoModelo.scale.set(1.5, 1.5, 1.5);
+                nuevoModelo.position.set(2, 3.5, 0);
+                nuevoModelo.rotation.set(Math.PI / 8, 0, Math.PI / 2.25);
+
+                // Configurar materiales y sombras
+                nuevoModelo.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = !isMobile;
+                        child.receiveShadow = !isMobile;
+                        if (child.material) {
+                            child.material.metalness = 0.0; 
+                            child.material.roughness = 0.7; 
+                        }
                     }
-                }
-            });
+                });
 
-            giftGroup.add(roseModel);
-            checkGiftsLoaded();
-        }, undefined, (e) => console.log("Rosa no encontrada (es normal si no está local)", e));
+                // Intercambio de modelos en la escena
+                if (roseModel) {
+                    // Si ya existía uno (ej. el 1k), lo reemplazamos
+                    giftGroup.remove(roseModel);
+                    console.log(`Nivel de calidad actualizado: ${urlActual}`);
+                }
+                
+                roseModel = nuevoModelo;
+                giftGroup.add(roseModel);
+
+                // Actualizar el array de regalos para que la UI use el nuevo modelo
+                if (gifts.length > 0) {
+                    gifts[0].model = roseModel;
+                } else {
+                    checkGiftsLoaded(); 
+                }
+
+                // Cargar el siguiente nivel de calidad en segundo plano
+                if (colaRosa.length > 0) {
+                    // Esperar un momento para no saturar el hilo principal inmediatamente
+                    setTimeout(cargarSiguienteNivelRosa, 2000);
+                }
+            }, undefined, (e) => {
+                console.warn(`Error cargando nivel ${urlActual}, manteniendo versión anterior.`, e);
+                cargarSiguienteNivelRosa(); // Saltar al siguiente si este falla
+            });
+        }
+
+        // Iniciar la carga progresiva
+        cargarSiguienteNivelRosa();
 
         // Regalo Interno
         cargadorRegalos.load('modelos_3d/cartera.glb', function(gltf) {
@@ -2161,6 +2255,7 @@
         lCtx.fillStyle = '#fff0f5'; lCtx.fillRect(0,0,512,512);
         lCtx.strokeStyle = 'gold'; lCtx.lineWidth = 10; lCtx.strokeRect(10,10,492,492);
         lCtx.fillStyle = '#000'; lCtx.font = '40px Arial'; lCtx.textAlign = 'center';
+        // Mensaje de carta parte frontal
         lCtx.fillText("Para Majo", 256, 256);
         
         // 3.1 Carta Reverso (Mensaje nuevo)
@@ -2170,6 +2265,7 @@
         lCtxBack.fillStyle = '#fff0f5'; lCtxBack.fillRect(0,0,512,512);
         lCtxBack.strokeStyle = 'gold'; lCtxBack.lineWidth = 10; lCtxBack.strokeRect(10,10,492,492);
         lCtxBack.fillStyle = '#000'; lCtxBack.font = '40px Arial'; lCtxBack.textAlign = 'center';
+        // Mensaje de carta parte trasera
         lCtxBack.fillText("Dios te llene", 256, 200);
         lCtxBack.fillText("de bendiciones", 256, 300);
 
@@ -2983,20 +3079,20 @@
         }
 
         function moverCamaraAPosicionPosado() {
-            // Perspectiva "desde la pared":
-            // La cámara se posiciona a la altura de la foto (y=-1) y mira hacia el pastel (y=-3)
-            // Se coloca en z=-18 para estar detrás del pastel (z=-12) pero delante de la pared (z=-19.9)
-            // Corregimos la altura (y=-1) para que no quede bajo el suelo y la vista (y=-3)
-            animarCamara(new THREE.Vector3(0, -1, -19), new THREE.Vector3(0, -1, 0), () => {
-                // Una vez que la cámara llega, aplicamos el mismo estilo de control que la cámara principal.
+            // Definimos objetivos precisos
+            const posFoto = new THREE.Vector3(0, -1, -19);
+            const targetFoto = new THREE.Vector3(0, -1, 0);
+
+            animarCamara(posFoto, targetFoto, () => {
+                // Configuración de controles restrictivos para el posado
                 controles.minAzimuthAngle = -Infinity;
                 controles.maxAzimuthAngle = Infinity;
                 controles.minPolarAngle = 0;
-                controles.maxPolarAngle = Math.PI; // Permitir mirar hasta arriba de nuevo
+                controles.maxPolarAngle = Math.PI;
                 controles.enableZoom = false;
-                controles.rotateSpeed = -0.5; // Usar el modo "mirar alrededor" (drag to look)
+                controles.rotateSpeed = -0.5;
                 controles.update();
-                // Al entrar en modo foto, esperamos 3 segundos de calma antes de sugerir el movimiento nuevamente
+                
                 setTimeout(() => {
                     if (!usuarioInteractuo && !isMobile) prepararBaseTutorial();
                 }, 3000);
@@ -3011,40 +3107,53 @@
             controles.maxPolarAngle = Math.PI; // Permitir mirar arriba de nuevo
             controles.enableZoom = false;
             controles.rotateSpeed = -0.5; // Volver al modo "mirar alrededor"
+            controles.update();
 
-            // Volver a la posición central mirando al frente
-            animarCamara(new THREE.Vector3(0, 5, 15), new THREE.Vector3(0, 4.8, 14), () => {
-                if (!isMobile) prepararBaseTutorial(); // Reanudar tutorial al volver si no hay interacción
+            const posFrente = new THREE.Vector3(0, 5, 15);
+            const targetFrente = new THREE.Vector3(0, 4.8, 14);
+
+            animarCamara(posFrente, targetFrente, () => {
+                if (!isMobile) prepararBaseTutorial();
             });
         }
 
+        let idAnimacionCamara = null; // Identificador global para cancelar movimientos en curso
+
         function animarCamara(posicionDestino, mirarA, alCompletar) {
-            tutorialActivo = false; // Pausar cualquier tutorial durante movimientos automáticos
+            // 1. Detenemos el tutorial y cualquier animación de cámara previa
+            tutorialActivo = false; 
+            if (idAnimacionCamara) cancelAnimationFrame(idAnimacionCamara);
+
+            controles.enabled = false; 
+            controles.update(); // Sincronizamos antes de capturar la posición inicial actual
+
             let alpha = 0;
             const posInicial = camara.position.clone();
             const objetivoInicial = controles.target.clone();
             
             function animarCam() {
-                alpha += 0.03;
-                if (alpha > 1) {
-                    alpha = 1;
-                }
+                alpha += 0.04; 
+                if (alpha > 1) alpha = 1;
                 
-                // Interpolar la posición de la cámara y el punto de mira (target)
                 camara.position.lerpVectors(posInicial, posicionDestino, alpha);
                 controles.target.lerpVectors(objetivoInicial, mirarA, alpha);
+                
+                controles.update(); 
 
                 if (alpha < 1) {
-                    requestAnimationFrame(animarCam);
+                    idAnimacionCamara = requestAnimationFrame(animarCam);
                 } else {
                     camara.position.copy(posicionDestino);
                     controles.target.copy(mirarA);
-                    if (alCompletar) {
-                        alCompletar();
-                    }
+                    
+                    controles.enabled = true;
+                    controles.update();
+                    idAnimacionCamara = null; // Limpiamos el identificador al terminar
+
+                    if (alCompletar) alCompletar();
                 }
             }
-            animarCam();
+            idAnimacionCamara = requestAnimationFrame(animarCam);
         }
 
         // 4. Repetir Foto
@@ -3197,11 +3306,29 @@
         }
         animar();
 
-        // Ajustar al redimensionar ventana
-        window.addEventListener('resize', () => {
-            camara.aspect = window.innerWidth / window.innerHeight;
+        // Ajustar al redimensionar ventana y cambio de orientación
+        function manejarResize() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+
+            // Forzar scroll al inicio para evitar desajustes por barras de navegación móviles
+            window.scrollTo(0, 0);
+
+            camara.aspect = width / height;
             camara.updateProjectionMatrix();
-            renderizador.setSize(window.innerWidth, window.innerHeight);
+            renderizador.setSize(width, height);
+            
+            // Si estamos en móvil, recalcular posición de la cámara del video
+            if (isMobile) {
+                actualizarUbicacionCamara();
+                // Resetear zoom de los controles si existiera
+                controles.update();
+            }
+        }
+
+        window.addEventListener('resize', manejarResize);
+        window.addEventListener('orientationchange', () => {
+            setTimeout(manejarResize, 100); // Pequeño delay para que el navegador actualice dimensiones
         });
     </script>
 </body>
