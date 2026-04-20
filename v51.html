@@ -388,11 +388,11 @@
             line-height: 1.4;
         }
         @media (orientation: landscape) {
-            #hint-velas { left: 20px; top: 50%; transform: translateY(-50%); }
-            /* Ajuste para PC: subimos el mensaje al 40% para no tapar los botones de navegación laterales */
-            body:not(.is-mobile) #hint-velas {
-                top: 40%;
-            }
+            #hint-velas { left: 20px; top: 50%; transform: translateY(-50%); transition: top 0.4s ease; }
+        }
+        /* Clase dinámica para elevar el mensaje al 40% solo cuando sea necesario */
+        #hint-velas.pos-elevada {
+            top: 34% !important;
         }
         @media (orientation: portrait) {
             #hint-velas { top: 10px; left: 50%; transform: translateX(-50%); }
@@ -2820,12 +2820,8 @@
             btnPrevGift.style.display = currentGiftIndex > 0 ? 'flex' : 'none';
             btnNextGift.style.display = currentGiftIndex < gifts.length - 1 ? 'flex' : 'none';
             
-            // Lógica de botones de acción según el regalo actual
-            if (gift.id === 'letter') {
-                btnActionGift.style.display = 'inline-block';
-                btnActionGift.textContent = "voltear 🔙";
-                btnCloseBox.style.display = 'none';
-            } else if (gift.id === 'box') {
+            // Open button only for last gift (Box)
+            if (currentGiftIndex === gifts.length - 1) {
                 if (isBoxOpen) {
                     btnActionGift.style.display = 'none';
                     btnCloseBox.style.display = 'inline-block';
@@ -2848,36 +2844,34 @@
             }
         }
 
-        // Función unificada para limpiar el estado del regalo actual antes de mover la cámara
-        function limpiarRegaloActualAntesDeMover(callback) {
-            const currentGift = gifts[currentGiftIndex];
-            if (currentGift.id === 'box' && isBoxOpen) {
-                cerrarCajaRegalo(callback);
-            } else if (currentGift.id === 'letter') {
-                resetCartaAlFrente(callback);
-            } else {
-                callback();
-            }
-        }
-
         btnNextGift.addEventListener('click', () => {
-            if (isGiftAnimating) return;
-            limpiarRegaloActualAntesDeMover(() => {
+            const proceed = () => {
                 if (currentGiftIndex < gifts.length - 1) {
                     currentGiftIndex++;
                     updateGiftView();
+                } else {
+                    isGiftAnimating = false;
                 }
-            });
+            };
+            // Si la caja está abierta, cerrarla primero
+            if (isBoxOpen) {
+                cerrarCajaRegalo(proceed);
+            } else proceed();
         });
 
         btnPrevGift.addEventListener('click', () => {
-            if (isGiftAnimating) return;
-            limpiarRegaloActualAntesDeMover(() => {
+            const proceed = () => {
                 if (currentGiftIndex > 0) {
                     currentGiftIndex--;
                     updateGiftView();
+                } else {
+                    isGiftAnimating = false;
                 }
-            });
+            };
+            // Si la caja está abierta, cerrarla primero
+            if (isBoxOpen) {
+                cerrarCajaRegalo(proceed);
+            } else proceed();
         });
         
         function abrirCajaRegalo() {
@@ -2933,81 +2927,7 @@
             }, 1000);
         }
         
-        function manejarAccionRegalo() {
-            const currentGift = gifts[currentGiftIndex];
-            if (!currentGift) return;
-            
-            if (currentGift.id === 'box') {
-                abrirCajaRegalo();
-            } else if (currentGift.id === 'letter') {
-                voltearOEnderezarCarta();
-            }
-        }
-        btnActionGift.addEventListener('click', manejarAccionRegalo);
-
-        function voltearOEnderezarCarta() {
-            if (isGiftAnimating) return;
-            isGiftAnimating = true;
-
-            // Calculamos orientaciones "perfectas" basadas en la cámara
-            const dummy = new THREE.Object3D();
-            dummy.position.copy(letterMesh.position);
-            const localCamPos = giftGroup.worldToLocal(camara.position.clone());
-            dummy.lookAt(localCamPos);
-            
-            const qFrente = dummy.quaternion.clone();
-            dummy.rotateY(Math.PI);
-            const qAtras = dummy.quaternion.clone();
-
-            const anguloAFrente = letterMesh.quaternion.angleTo(qFrente);
-            const anguloAAtras = letterMesh.quaternion.angleTo(qAtras);
-
-            let qDestino;
-            const margen = 0.55; // Margen de error (~31 grados)
-
-            if (anguloAFrente < margen) {
-                qDestino = qAtras; // Está de frente -> voltear atrás
-            } else if (anguloAAtras < margen) {
-                qDestino = qFrente; // Está de atrás -> voltear frente
-            } else {
-                // Está torcida -> enderezar al lado más cercano
-                qDestino = (anguloAFrente < anguloAAtras) ? qFrente : qAtras;
-            }
-
-            animarRotacionCarta(qDestino);
-        }
-
-        function resetCartaAlFrente(onComplete) {
-            const dummy = new THREE.Object3D();
-            dummy.position.copy(letterMesh.position);
-            const localCamPos = giftGroup.worldToLocal(camara.position.clone());
-            dummy.lookAt(localCamPos);
-            const qFrente = dummy.quaternion.clone();
-
-            // Si ya está de frente y derecha, no animamos
-            if (letterMesh.quaternion.angleTo(qFrente) < 0.05) {
-                if (onComplete) onComplete();
-                return;
-            }
-            animarRotacionCarta(qFrente, onComplete);
-        }
-
-        function animarRotacionCarta(qDestino, onComplete) {
-            const qInicial = letterMesh.quaternion.clone();
-            const anim = { t: 0 };
-            new TWEEN.Tween(anim)
-                .to({ t: 1 }, 600)
-                .easing(TWEEN.Easing.Quadratic.Out)
-                .onUpdate(() => {
-                    letterMesh.quaternion.copy(qInicial).slerp(qDestino, anim.t);
-                })
-                .onComplete(() => { 
-                    isGiftAnimating = false; 
-                    if (onComplete) onComplete();
-                })
-                .start();
-        }
-
+        btnActionGift.addEventListener('click', abrirCajaRegalo);
         btnCloseBox.addEventListener('click', () => cerrarCajaRegalo());
 
         function resetToInitialState() {
