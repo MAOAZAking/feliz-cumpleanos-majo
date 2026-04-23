@@ -65,20 +65,14 @@
                 border-radius: 50% !important;
                 line-height: 1 !important;
             }
-            body.is-mobile #controles-resultado {
-                display: none;
+            #controles-resultado {
+                display: none; /* Se muestra después de tomar la foto */
                 pointer-events: auto;
-                gap: 25px; /* Espacio reducido entre botones */
+                gap: 15px;
                 justify-content: center;
                 left: 50%;
-                right: auto !important;
-                transform: translateX(-2%);
-                width: 95%;
-            }
-            body.is-mobile #controles-resultado .btn {
-                width: 46% !important; /* Ancho reducido para que quepan ambos lado a lado */
-                padding: 12px 5px !important;
-                font-size: 15px !important;
+                transform: translateX(-0.5%);
+                width: 90%;
             }
         #boton-modo-foto{
             left: 50%;
@@ -721,6 +715,17 @@
         }
         
         .loading-text {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-family: 'Arial', sans-serif;
+            font-size: 24px;
+            z-index: 3;
+            transition: opacity 0.5s;
+        }
+        
+        .loading-text {
             text-align: center;
             position: absolute;
             top: 50%; left: 50%;
@@ -730,24 +735,12 @@
             font-size: 24px;
             z-index: 3;
             transition: opacity 0.5s;
-            width: 90%;
-            max-width: 800px;
         }
 
         /* Clase para activar la animación de abrir ojos */
         .eyes-open #eyelid-top { transform: translateY(-100%); }
         .eyes-open #eyelid-bottom { transform: translateY(100%); }
         .eyes-open .loading-text { opacity: 0; }
-
-        /* Animación de letras saltando */
-        .loading-text span {
-            display: inline-block;
-            animation: bounce 0.6s infinite alternate;
-        }
-        @keyframes bounce {
-            from { transform: translateY(0); }
-            to { transform: translateY(-10px); }
-        }
     </style>
     <!-- 1. Recursos de Inteligencia Artificial (TensorFlow.js) -->
     <!-- Carga local primero, con respaldo (fallback) a CDN si falla -->
@@ -772,7 +765,7 @@
     <!-- Pantalla de carga con animación de párpados -->
     <div id="loading-screen">
         <div id="eyelid-top" class="eyelid"></div>
-        <center><div class="loading-text" id="loading-text">Estamos cargando el entorno virtual...</div></center>
+        <center><div class="loading-text" id="loading-text">Despertando en el cumple de Majo...</div></center>
         <div id="eyelid-bottom" class="eyelid"></div>
     </div>
 
@@ -841,34 +834,6 @@
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
         import TWEEN from 'https://unpkg.com/@tweenjs/tween.js@18.6.4/dist/tween.esm.js';
-
-        // --- CONTROL DE ESTADO GLOBAL (Unificados al inicio para evitar errores de inicialización) ---
-        let iaCargada = false;
-        let fuenteCargada = false;
-        let usuarioInteractuo = false; 
-        let tutorialActivo = false;
-        let pasoTutorialVelas = 0;
-        let idAnimacionCamara = null;
-        let segmentador = null;
-
-        // --- ANIMACIÓN DE TEXTO DE CARGA ---
-        const loadingTextEl = document.getElementById('loading-text');
-        const msg = "Estamos cargando el entorno virtual...";
-        
-        let charCounter = 0;
-        loadingTextEl.innerHTML = msg.split(" ").map((palabra) => {
-            const spansPalabra = palabra.split("").map((letra) => {
-                const delay = charCounter * 0.05;
-                charCounter++;
-                return `<span style="animation-delay: ${delay}s">${letra}</span>`;
-            }).join("");
-            charCounter++; // Compensamos el espacio para el ritmo de la animación
-            // Envolvemos cada palabra en un bloque que no se puede romper por la mitad
-            return `<span style="display: inline-block; white-space: nowrap;">${spansPalabra}</span>`;
-        }).join(" ");
-
-
-        try { usuarioInteractuo = getCookie("tutorial_visto") === "true"; } catch(e) {}
 
         // Importar el servicio de GitHub
         import { queueUpload, GH_CONFIG } from './js/github-service.js';
@@ -1265,8 +1230,8 @@
             });
         }
         
-        // Eliminamos las declaraciones duplicadas que estaban aquí (antes líneas 1897-1898)
         const llamasParaAnimar = [];
+        let iaCargada = false;
 
         function actualizarGlobos(tiempo) {
             globosAnimados.forEach(g => {
@@ -1552,7 +1517,6 @@
 
             } else if (tipo === 'puerta') {
                 // Puerta: Panel de madera con patrón
-                const panelPuerta = new THREE.Group();
                 if (isMobile) {
                     // Optimización Móvil: Puerta lisa sin relieve
                     const geoPuertaLisa = new THREE.BoxGeometry(0.2, alto - 0.5, ancho - 0.5);
@@ -1730,24 +1694,17 @@
         grupoMarco.position.set(0, 7, -19.5); // Delante del reloj para taparlo con la silueta
         escena.add(grupoMarco);
 
+        // Control de carga
+        let fuenteCargada = false; 
+        // Sugerencia 6: Carga diferida. Abrimos ojos cuando el entorno base está listo.
         function verificarListo() {
-            // OPTIMIZACIÓN: Ya no esperamos a la IA ni a la fuente.
-            // Abrimos los ojos apenas el entorno base (Habitación/Pastel) se añade a la escena.
-            console.log("Entorno listo, abriendo ojos...");
-            abrirOjosCumple();
-        }
-        
-        function abrirOjosCumple() {
             const loadingScreen = document.getElementById('loading-screen');
             if (loadingScreen && !loadingScreen.classList.contains('eyes-open')) {
                 loadingScreen.classList.add('eyes-open');
                 setTimeout(() => { 
                     loadingScreen.style.opacity = 0; 
-                    setTimeout(() => { loadingScreen.style.display = 'none'; }, 2000);
                     setTimeout(() => {
-                        if (!usuarioInteractuo) {
-                            mostrarTutorial();
-                        }
+                        if (!usuarioInteractuo) mostrarTutorial();
                     }, isMobile ? 1000 : 3000);
                 }, 2500);
             }
@@ -1785,14 +1742,6 @@
                 setTimeout(() => { hint.style.opacity = 1; }, 100);
             }
         }
-
-        // SEGURO DE APERTURA: Si en 15 segundos no han cargado los recursos, abrimos la página de todos modos.
-        setTimeout(() => {
-            if (document.getElementById('loading-screen').style.opacity !== "0") {
-                console.warn("Carga lenta: Forzando apertura de ojos.");
-                abrirOjosCumple();
-            }
-        }, 15000);
 
         // --- BOMBILLO EN EL TECHO ---
         function crearBombillo() {
@@ -2134,12 +2083,10 @@
             escena.add(grupoLetrero);
 
             fuenteCargada = true;
-            verificarListo();
         }, undefined, function(err) {
             console.error("Error cargando fuente:", err);
             // Aun si falla, permitimos que la app continue
             fuenteCargada = true;
-            verificarListo();
         });
 
         function actualizarLlamas(tiempo) {
@@ -2392,6 +2339,8 @@
 
         let flujoVideo = null; // Guardará el stream de la cámara
         let ultimaFotoCapturadaBlob = null; // Para guardar la foto antes de procesar por IA
+        let segmentador = null; // Variable para el modelo de IA
+        let tutorialActivo = false;
         let anguloTutorialBase = 0;
         let startTimeTutorial = 0;
         let tutorialCamPos = new THREE.Vector3();
@@ -2447,6 +2396,8 @@
         let tutorialDistance = 15;
         let tutorialY = 5;
         let inversionTutorial = 1;
+        let usuarioInteractuo = getCookie("tutorial_visto") === "true";
+        let pasoTutorialVelas = 0; // Control de fases del tutorial (Portado de v37)
 
         // Función para reiniciar el tiempo de la animación CSS clonando el nodo (Fix Emoji)
         function reiniciarAnimacionesCSS(hintElement) {
@@ -2728,8 +2679,6 @@
                     const sensibilidad = 0.005;
                     currentGift.model.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), deltaMove.x * sensibilidad);
                     currentGift.model.rotateOnWorldAxis(new THREE.Vector3(1, 0, 0), deltaMove.y * sensibilidad);
-
-                    if (currentGift.id === 'letter') actualizarTextoBotonCarta();
                 }
 
                 previousMousePosition = { x: e.clientX, y: e.clientY };
@@ -2902,7 +2851,7 @@
             // Lógica de botones de acción según el regalo actual
             if (gift.id === 'letter') {
                 btnActionGift.style.display = 'inline-block';
-                actualizarTextoBotonCarta();
+                btnActionGift.textContent = "voltear 🔙";
                 btnCloseBox.style.display = 'none';
             } else if (gift.id === 'box') {
                 if (isBoxOpen) {
@@ -3024,32 +2973,6 @@
         }
         btnActionGift.addEventListener('click', manejarAccionRegalo);
 
-        function actualizarTextoBotonCarta() {
-            const currentGift = gifts[currentGiftIndex];
-            if (!currentGift || currentGift.id !== 'letter') return;
-
-            // Calculamos orientaciones "perfectas" basadas en la cámara para saber si está torcida
-            const dummy = new THREE.Object3D();
-            dummy.position.copy(letterMesh.position);
-            const localCamPos = giftGroup.worldToLocal(camara.position.clone());
-            dummy.lookAt(localCamPos);
-            
-            const qFrente = dummy.quaternion.clone();
-            dummy.rotateY(Math.PI);
-            const qAtras = dummy.quaternion.clone();
-
-            const anguloAFrente = letterMesh.quaternion.angleTo(qFrente);
-            const anguloAAtras = letterMesh.quaternion.angleTo(qAtras);
-
-            const margen = 0.55; // Margen de error (~31 grados) para considerar que está "bien" orientada
-
-            if (anguloAFrente < margen || anguloAAtras < margen) {
-                btnActionGift.textContent = "voltear 🔙";
-            } else {
-                btnActionGift.textContent = "Enderezar 🪄";
-            }
-        }
-
         function voltearOEnderezarCarta() {
             if (isGiftAnimating) return;
             isGiftAnimating = true;
@@ -3105,7 +3028,6 @@
                 .easing(TWEEN.Easing.Quadratic.Out)
                 .onUpdate(() => {
                     letterMesh.quaternion.copy(qInicial).slerp(qDestino, anim.t);
-                    actualizarTextoBotonCarta();
                 })
                 .onComplete(() => { 
                     isGiftAnimating = false; 
@@ -3313,6 +3235,8 @@
                 if (!isMobile) prepararBaseTutorial();
             });
         }
+
+        let idAnimacionCamara = null; // Identificador global para cancelar movimientos en curso
 
         function animarCamara(posicionDestino, mirarA, alCompletar) {
             // 1. Detenemos el tutorial y cualquier animación de cámara previa
