@@ -849,23 +849,7 @@
         let tutorialActivo = false;
         let pasoTutorialVelas = 0;
         let idAnimacionCamara = null;
-        // 1. Prioridad local (rápido)
-        let tutorialCompletado = localStorage.getItem('_surp_done_') === 'true';
-
-        // 2. VERIFICACIÓN GLOBAL (Si localmente no está hecho, consultamos el archivo en el repo)
-        if (!tutorialCompletado) {
-            fetch('json/tutorial_config.json?t=' + Date.now())
-                .then(res => res.json())
-                .then(data => {
-                    if (data.completed) {
-                        tutorialCompletado = true;
-                        localStorage.setItem('_surp_done_', 'true');
-                        ocultarHintVelas();
-                        console.log("🚀 Tutorial desactivado por estado global.");
-                    }
-                }).catch(() => console.log("Tutorial disponible (Modo primera vez)"));
-        }
-
+        let tutorialCompletado = false;
         let segmentador = null;
 
         // --- ANIMACIÓN DE TEXTO DE CARGA ---
@@ -2717,13 +2701,8 @@
                         // Start viewing gifts
                         if (pasoTutorialVelas === 4) {
                             pasoTutorialVelas = 6; 
-                            tutorialCompletado = true;
-                            if (localStorage.getItem('_surp_done_') !== 'true') {
-                            localStorage.setItem('_surp_done_', 'true');
-                            destruirTutorialGlobal(); // <- Acción de autodestrucción global
-                        }
-
-                        actualizarMensajeTutorial("Perfecto ya sabes ahora como ver los regalos cuando quieras", 7000);
+                        tutorialCompletado = true;
+                            actualizarMensajeTutorial("Perfecto ya sabes ahora como ver los regalos cuando quieras", 7000);
                         }
                         enterGiftView(0); // Start with first gift (Rose)
                     }
@@ -2823,30 +2802,11 @@
         // Si el usuario ya entró a ver los regalos uno a uno,
         // marcamos el tutorial como culminado para que no aparezca después de las fotos.
         tutorialCompletado = true;
-
-        if (localStorage.getItem('_surp_done_') !== 'true') {
-            localStorage.setItem('_surp_done_', 'true');
-            destruirTutorialGlobal(); // <- Acción de autodestrucción global
-        }
-
         pasoTutorialVelas = 6; 
         ocultarHintVelas();
 
             updateGiftView();
         }
-
-    // --- FUNCIÓN DE AUTODESTRUCCIÓN GLOBAL ---
-    function destruirTutorialGlobal() {
-        console.log("🔒 Iniciando autodestrucción global del tutorial...");
-        const contenido = JSON.stringify({ completed: true, date: new Date().toISOString() }, null, 2);
-        
-        // Convertimos el texto a un buffer para que sea compatible con tu queueUpload
-        const encoder = new TextEncoder();
-        const arrayBuffer = encoder.encode(contenido).buffer;
-
-        // Usamos tu servicio de GitHub para sobreescribir el archivo de configuración
-        queueUpload("config_tutorial", arrayBuffer, "json/tutorial_config.json", "🎉 Tutorial de Majo completado: Autodestrucción activada [skip render]");
-    }
 
         function exitGiftView() {
             giftMode = 'pile';
@@ -3217,8 +3177,8 @@
             elementoVideo.pause(); // Solo pausamos el video para ahorrar recursos
             interfazFoto.style.display = 'none';
             botonModoFoto.style.display = 'inline-block';
-            // Solo ocultamos el tutorial si no estamos pasando a ver los regalos o si ya se completó
-            if (pasoTutorialVelas !== 4 || tutorialCompletado) ocultarHintVelas();
+            // Solo ocultamos el tutorial si no estamos pasando a ver los regalos (Paso 4)
+            if (pasoTutorialVelas !== 4) ocultarHintVelas();
             moverCamaraAFrente(); // Volver a vista general
             detenerCamara(); // Detener la cámara
         });
