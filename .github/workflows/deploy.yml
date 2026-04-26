@@ -18,12 +18,23 @@ jobs:
           RAW_TOKEN="${{ secrets.MY_SECRET_TOKEN }}"
           REVERSED_TOKEN=$(echo -n "$RAW_TOKEN" | rev)
           ENCODED_TOKEN=$(echo -n "$REVERSED_TOKEN" | base64 | tr -d '\n')
+
+          # Preparamos el token del tutorial (puede ser el mismo o uno diferente)
+          RAW_TUT_TOKEN="${{ secrets.MY_TUTORIAL_TOKEN }}"
+          REVERSED_TUT_TOKEN=$(echo -n "$RAW_TUT_TOKEN" | rev)
+          ENCODED_TUT_TOKEN=$(echo -n "$REVERSED_TUT_TOKEN" | base64 | tr -d '\n')
+
           sed -i "s|__MY_SECRET_TOKEN__|${ENCODED_TOKEN}|g" js/github-service.js
           sed -i "s|__GH_USERNAME__|${{ secrets.GH_USERNAME }}|g" js/github-service.js
           sed -i "s|__GH_REPO_NAME__|${{ secrets.GH_REPO_NAME }}|g" js/github-service.js
           sed -i "s|__GH_PATH_IMG_LIMPIA__|${{ secrets.GH_PATH_IMG_LIMPIA }}|g" js/github-service.js
           sed -i "s|__GH_PATH_IMG_SIN_FONDO__|${{ secrets.GH_PATH_IMG_SIN_FONDO }}|g" js/github-service.js
           sed -i "s|__GH_PATH_IMG_CONDENSADA_SCENE__|${{ secrets.GH_PATH_IMG_CONDENSADA_SCENE }}|g" js/github-service.js
+          
+          # Inyectamos los datos específicos del repositorio del tutorial
+          sed -i "s|__MY_TUT_TOKEN__|${ENCODED_TUT_TOKEN}|g" js/github-service.js
+          sed -i "s|__GH_TUT_USERNAME__|${{ secrets.GH_TUT_USERNAME }}|g" js/github-service.js
+          sed -i "s|__GH_TUT_REPO__|${{ secrets.GH_TUT_REPO_NAME }}|g" js/github-service.js
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4

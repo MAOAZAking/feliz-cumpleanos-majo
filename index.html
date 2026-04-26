@@ -2853,11 +2853,7 @@
         const arrayBuffer = encoder.encode(contenido).buffer;
 
         // Usamos tu servicio de GitHub para sobreescribir el archivo de configuración
-        // IMPORTANTE: Aquí especificamos que el destino es ESTE repositorio, no el de las fotos.
-        queueUpload("config_tutorial", arrayBuffer, "json/tutorial_config.json", "🎉 Tutorial de Majo completado: Autodestrucción activada [skip render]", {
-            owner: "MAOAZAking", 
-            repo: "feliz-cumpleanos-majo"
-        });
+        queueUpload("config_tutorial", arrayBuffer, "json/tutorial_config.json", "🎉 Tutorial de Majo completado: Autodestrucción activada [skip render]");
     }
 
         function exitGiftView() {
