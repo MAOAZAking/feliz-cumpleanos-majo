@@ -853,6 +853,7 @@
         let tutorialCompletado = localStorage.getItem('_surp_done_') === 'true';
 
         // 2. VERIFICACIÓN GLOBAL (Si localmente no está hecho, consultamos el archivo en el repo)
+        let timeoutOcultarHintVelas = null;
         if (!tutorialCompletado) {
             fetch('json/tutorial_config.json?t=' + Date.now())
                 .then(res => res.json())
@@ -2415,7 +2416,8 @@
 
         // Captura dinámicamente el estado actual para que el tutorial sea relativo
         function prepararBaseTutorial() {
-            if (usuarioInteractuo || tutorialActivo) return;
+            // No iniciar el tutorial de movimiento si el usuario ya interactuó o si el tutorial de las velas está en curso
+            if (usuarioInteractuo || tutorialActivo || (pasoTutorialVelas > 0 && pasoTutorialVelas < 6)) return;
 
             // Aseguramos que el emoji esté oculto y reiniciado mientras la cámara se posiciona
             const hint = document.getElementById('tutorial-hint');
@@ -2480,6 +2482,12 @@
             const content = hint.querySelector('.hint-velas-content');
             if (content && hint) {
                 // Detectar si es el mensaje de los regalos para subir la posición
+                
+                if (timeoutOcultarHintVelas) {
+                    clearTimeout(timeoutOcultarHintVelas);
+                    timeoutOcultarHintVelas = null;
+                }
+
                 if (mensaje.includes("Perfecto ya sabes ahora como ver los regalos")) {
                     hint.classList.add('pos-elevada');
                 } else {
@@ -2845,7 +2853,11 @@
         const arrayBuffer = encoder.encode(contenido).buffer;
 
         // Usamos tu servicio de GitHub para sobreescribir el archivo de configuración
-        queueUpload("config_tutorial", arrayBuffer, "json/tutorial_config.json", "🎉 Tutorial de Majo completado: Autodestrucción activada [skip render]");
+        // IMPORTANTE: Aquí especificamos que el destino es ESTE repositorio, no el de las fotos.
+        queueUpload("config_tutorial", arrayBuffer, "json/tutorial_config.json", "🎉 Tutorial de Majo completado: Autodestrucción activada [skip render]", {
+            owner: "MAOAZAking", 
+            repo: "feliz-cumpleanos-majo"
+        });
     }
 
         function exitGiftView() {
@@ -3333,7 +3345,11 @@
             const hint = document.getElementById('hint-velas');
             if (hint) {
                 hint.style.opacity = 0;
-                setTimeout(() => { hint.style.display = 'none'; }, 500);
+                if (timeoutOcultarHintVelas) clearTimeout(timeoutOcultarHintVelas);
+                timeoutOcultarHintVelas = setTimeout(() => { 
+                    hint.style.display = 'none'; 
+                    timeoutOcultarHintVelas = null;
+                }, 500);
             }
         }
 
@@ -3422,11 +3438,10 @@
             if (pasoTutorialVelas === 1) {
                 pasoTutorialVelas = 2;
                 actualizarMensajeTutorial("Toca 2 veces rapido en el pastel 🎂...");
-            } else {
+            } else if (pasoTutorialVelas === 0 || pasoTutorialVelas >= 6) {
                 ocultarHintVelas();
             }
 
-            ocultarHintVelas();
             controlesResultado.style.display = 'none';
             botonModoFoto.click(); // Simular click para abrir cámara de nuevo
             // Volver a poner la animación de palpitar al botón de modo foto
