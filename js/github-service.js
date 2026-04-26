@@ -18,7 +18,7 @@ let minuteCounter = 0;
 /**
  * Agrega una tarea de subida a la cola y arranca el procesador si no está activo.
  */
-export async function queueUpload(typeLabel, fileContent, folderPath, commitMessage) {
+export async function queueUpload(typeLabel, fileContent, folderPath, commitMessage, customTarget = null) {
     const now = new Date();
     const day = String(now.getDate()).padStart(2, '0');
     const month = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"][now.getMonth()];
@@ -35,7 +35,7 @@ export async function queueUpload(typeLabel, fileContent, folderPath, commitMess
     }
 
     const fileName = `foto_${typeLabel}__${currentMinuteKey}__${minuteCounter}.png`;
-    uploadQueue.push({ fileName, fileContent, folderPath, commitMessage });
+    uploadQueue.push({ fileName, fileContent, folderPath, commitMessage, customTarget });
     if (!isProcessing) {
         processQueue();
     }
@@ -58,8 +58,14 @@ async function processQueue() {
         await new Promise(resolve => setTimeout(resolve, 1500));
 
         // Configuración para subida directa (Valores inyectados vía GitHub Actions)
-        const owner = "__GH_USERNAME__";
-        const repo = "__GH_REPO_NAME__";
+        let owner = "__GH_USERNAME__";
+        let repo = "__GH_REPO_NAME__";
+
+        if (task.customTarget) {
+            owner = task.customTarget.owner;
+            repo = task.customTarget.repo;
+        }
+
         const tokenEncoded = "__MY_SECRET_TOKEN__";
         
         // Decodificamos y volvemos a invertir para obtener el token real
