@@ -91,8 +91,35 @@ async function processQueue() {
             'TYPE_SCENE': (pEscena.startsWith("__") || pEscena === "") ? "capturas/escenas" : pEscena
         };
 
-        const targetPath = pathMap[task.folderPath] || "capturas/otros";
-        const url = `https://api.github.com/repos/${owner}/${repo}/contents/${targetPath}/${task.fileName}`;
+        // DETERMINAR RUTA FINAL
+        // Si folderPath contiene un punto (ej: json/config.json), lo usamos como ruta directa al archivo
+        const esArchivoDirecto = task.folderPath.includes('.');
+        const rutaFinal = esArchivoDirecto 
+            ? task.folderPath 
+            : `${pathMap[task.folderPath] || "capturas/otros"}/${task.fileName}`;
+
+        const url = `https://api.github.com/repos/${owner}/${repo}/contents/${rutaFinal}`;
+
+        // PARA SOBREESCRIBIR (Tutorial), necesitamos obtener el SHA del archivo actual
+        let sha = null;
+        try {
+            const getRes = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (getRes.ok) {
+                const data = await getRes.json();
+                sha = data.sha;
+            }
+        } catch (e) {
+            // Si el archivo no existe, sha se queda null y GitHub lo crea como nuevo
+        }
+
+        const bodyPayload = {
+            message: task.commitMessage,
+            content: base64Content,
+            branch: "main"
+        };
+        if (sha) bodyPayload.sha = sha;
 
         const response = await fetch(url, {
             method: 'PUT',
@@ -100,11 +127,7 @@ async function processQueue() {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                message: task.commitMessage,
-                content: base64Content,
-                branch: "main" // Asegúrate de que esta sea tu rama principal
-            })
+            body: JSON.stringify(bodyPayload)
         });
 
     } catch (error) {
