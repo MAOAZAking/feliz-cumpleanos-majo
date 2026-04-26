@@ -35,7 +35,7 @@ export async function queueUpload(typeLabel, fileContent, folderPath, commitMess
     }
 
     const fileName = `foto_${typeLabel}__${currentMinuteKey}__${minuteCounter}.png`;
-    uploadQueue.push({ fileName, fileContent, folderPath, commitMessage, customTarget });
+    uploadQueue.push({ typeLabel, fileName, fileContent, folderPath, commitMessage, customTarget });
     if (!isProcessing) {
         processQueue();
     }

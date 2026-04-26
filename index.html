@@ -2499,7 +2499,7 @@
                 setTimeout(() => { hint.style.opacity = 1; }, 50);
 
                 if (duracion > 0) {
-                    setTimeout(() => {
+                    timeoutOcultarHintVelas = setTimeout(() => {
                         ocultarHintVelas();
                     }, duracion);
                 }
@@ -2731,7 +2731,7 @@
                             destruirTutorialGlobal(); // <- Acción de autodestrucción global
                         }
 
-                        actualizarMensajeTutorial("Perfecto ya sabes ahora como ver los regalos cuando quieras", 7000);
+                        actualizarMensajeTutorial("Perfecto ya sabes ahora como ver los regalos", 3000);
                         }
                         enterGiftView(0); // Start with first gift (Rose)
                     }
@@ -2838,7 +2838,6 @@
         }
 
         pasoTutorialVelas = 6; 
-        ocultarHintVelas();
 
             updateGiftView();
         }
