@@ -2355,9 +2355,9 @@
         const letterCanvas = document.createElement('canvas');
         letterCanvas.width = 512; letterCanvas.height = 512;
         const lCtx = letterCanvas.getContext('2d');
-        lCtx.fillStyle = '#ffffff'; lCtx.fillRect(0,0,512,512);
+        lCtx.fillStyle = '#fff0f5'; lCtx.fillRect(0,0,512,512);
         lCtx.strokeStyle = 'gold'; lCtx.lineWidth = 10; lCtx.strokeRect(10,10,492,492);
-        lCtx.fillStyle = '#000000'; lCtx.font = '40px Arial'; lCtx.textAlign = 'center';
+        lCtx.fillStyle = '#000'; lCtx.font = '40px Arial'; lCtx.textAlign = 'center';
         // Mensaje de carta parte frontal
         lCtx.fillText("🥳Feliz Cumpleaños Majo", 256, 180);
         lCtx.fillText("Dios te bendiga 🙏🏼", 256, 240);
@@ -2367,20 +2367,19 @@
         const letterCanvasBack = document.createElement('canvas');
         letterCanvasBack.width = 512; letterCanvasBack.height = 512;
         const lCtxBack = letterCanvasBack.getContext('2d');
-        lCtxBack.fillStyle = '#ffffff'; lCtxBack.fillRect(0,0,512,512);
+        lCtxBack.fillStyle = '#fff0f5'; lCtxBack.fillRect(0,0,512,512);
         lCtxBack.strokeStyle = 'gold'; lCtxBack.lineWidth = 10; lCtxBack.strokeRect(10,10,492,492);
-        lCtxBack.fillStyle = '#000000'; lCtxBack.font = '40px Arial'; lCtxBack.textAlign = 'center';
+        lCtxBack.fillStyle = '#000'; lCtxBack.font = '40px Arial'; lCtxBack.textAlign = 'center';
         // Mensaje de carta parte trasera
         
-        lCtxBack.fillText("Que sigas siendo 💡 luz", 256, 70);
-        lCtxBack.fillText("en todo 🌎 lugar; Siendo", 256, 120);
-        lCtxBack.fillText("esa mujer 😎 ejemplar,", 256, 170);
-        lCtxBack.fillText("enfocada, atenta, serivical", 256, 220);
-        lCtxBack.fillText("y responsable; Eres", 256, 270);
-        lCtxBack.fillText("una persona increíble 😉", 256, 320);
-        lCtxBack.fillText("que de verdad vale la pena", 256, 370);
-        lCtxBack.fillText("🙂‍↕️ y sería un privilegio", 256, 420);
-        lCtxBack.fillText("que me dejes conocerte 🥹", 256, 470);
+        lCtxBack.fillText("y sigas siendo luz", 256, 100);
+        lCtxBack.fillText("en todo lugar", 256, 125);
+        lCtxBack.fillText("Siendo esa mujer ejemplar,", 256, 150);
+        lCtxBack.fillText("enfocada, atenta, serivical", 256, 175);
+        lCtxBack.fillText("responsable; Eres una persona", 256, 300);
+        lCtxBack.fillText("increible,🙂‍↕️que vale la pena", 256, 325);
+        lCtxBack.fillText("y seria un privilegio", 256, 360);
+        lCtxBack.fillText("que me dejaras conocerte☺️", 256, 360);
 
         const letterTex = new THREE.CanvasTexture(letterCanvas);
         const letterTexBack = new THREE.CanvasTexture(letterCanvasBack);
@@ -2517,45 +2516,29 @@
         }
 
 
-        // --- Inicializar IA con Reintento ---
-        let isIAInitializing = false;
-        async function cargarIA(intentos = 3) {
-            if (segmentador || isIAInitializing) return;
-            isIAInitializing = true;
-
-            for (let i = 0; i < intentos; i++) {
-                try {
-                    if (typeof bodySegmentation === 'undefined' || typeof SelfieSegmentation === 'undefined') {
-                        throw new Error("Librerías de IA no encontradas.");
-                    }
-                    
-                    // Aseguramos que TensorFlow esté listo y con el backend correcto
-                    await tf.ready();
-                    await tf.setBackend('webgl');
-
-                    const model = bodySegmentation.SupportedModels.MediaPipeSelfieSegmentation;
-                    const segmenterConfig = {
-                        runtime: 'mediapipe',
-                        solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation',
-                        modelType: 'general'
-                    };
-                    
-                    segmentador = await bodySegmentation.createSegmenter(model, segmenterConfig);
-                    console.log("✅ IA cargada exitosamente en el intento " + (i + 1));
-                    iaCargada = true;
-                    isIAInitializing = false;
-                    return;
-                } catch (e) {
-                    console.warn(`⚠️ Error en intento ${i + 1} de carga de IA:`, e.message);
-                    if (i < intentos - 1) {
-                        // Esperar 2.5 segundos antes de reintentar para dar respiro al navegador
-                        await new Promise(r => setTimeout(r, 2500)); 
-                    } else {
-                        console.error("❌ Fallo crítico al cargar IA tras varios intentos:", e);
-                        iaCargada = true; // Permitir que la app continúe aunque sea sin IA
-                        isIAInitializing = false;
-                    }
+        // --- Inicializar IA ---
+        async function cargarIA() {
+            try {
+                if (typeof bodySegmentation === 'undefined' || typeof SelfieSegmentation === 'undefined') {
+                    throw new Error("Librerías de IA no encontradas. Revisa tu conexión o los archivos locales.");
                 }
+                // Forzar el backend de WebGL, que es necesario para un rendimiento óptimo.
+                await tf.setBackend('webgl');
+
+                const model = bodySegmentation.SupportedModels.MediaPipeSelfieSegmentation;
+                const segmenterConfig = {
+                    runtime: 'mediapipe',
+                    solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation',
+                    modelType: 'general'
+                };
+                segmentador = await bodySegmentation.createSegmenter(model, segmenterConfig);
+                
+                iaCargada = true;
+            } catch (e) {
+                console.error("Error cargando IA:", e);
+                alert("No se pudo cargar el modelo de IA. Es posible que tu dispositivo no sea compatible. La función de foto sin fondo no estará disponible.");
+                // Aunque falle, permitimos que la app continúe sin la pantalla de carga.
+                iaCargada = true; 
             }
         }
         // Iniciamos la carga de la IA
